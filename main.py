@@ -25,8 +25,6 @@ network_topology.csv) and an assumed installed PV capacity. This is
 stated explicitly rather than silently feeding in unphysical numbers.
 """
 import os
-import pandas as pd
-import numpy as np
 import data_loader as dl
 import forecasting as fc
 import renewable as rw

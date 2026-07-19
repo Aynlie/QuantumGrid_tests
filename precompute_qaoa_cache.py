@@ -22,10 +22,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import network_model as nm
 import disaster_recovery as dr
 import qubo_builder as qb
-import quantum_optimizer as qo
 import quapp_client
 from data_loader import load_all
 
@@ -134,10 +132,10 @@ def main():
     demand = bundle["demand_pu"]
     solar = bundle["solar_pu"]
     network = graph
-    dist_graph = nm.build_distribution_graph(graph)
+
 
     # Use peak-hour net injection as the representative load profile
-    from forecasting import build_features, train_demand_forecaster, compute_allocation_factors, disaggregate_forecast_series
+    from forecasting import compute_allocation_factors, disaggregate_forecast_series
     from renewable import (compute_pv_allocation_factors, allocate_measured_solar,
                            apply_hosting_capacity, compute_net_load)
 
@@ -197,7 +195,7 @@ def main():
                 print(f"  [Cached] energy={entry['energy']:.4f}, date={entry['precomputed_date']}")
                 success_count += 1
             else:
-                print(f"  [Skipped] (not restorable)")
+                print("  [Skipped] (not restorable)")
         except Exception as e:
             print(f"  [FAILED] {e}")
 

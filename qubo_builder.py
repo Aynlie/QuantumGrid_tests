@@ -92,10 +92,11 @@ def find_switchable_loops(dg):
     loops entirely; compute_loop_open_costs() forces them closed.
     """
     required, optional = _structurally_required_switchable(dg)
-    if required:
-        print(f"[qubo_builder] NOTE: switchable edge(s) {required} are "
-              f"structurally REQUIRED here to keep the network connected "
-              f"-- treated as forced-closed, not QUBO decision variables.")
+    # if required:
+    #     print(f"[qubo_builder] NOTE: switchable edge(s) {required} are "
+    #           f"structurally REQUIRED here to keep the network connected "
+    #           f"-- treated as forced-closed, not QUBO decision variables.")
+
     tree_edges = set(dg.fixed_edges) | set(required)
     tree = nx.Graph()
     tree.add_nodes_from(dg.graph.nodes())
@@ -134,10 +135,10 @@ def compute_loop_open_costs(dg, loops, net_injection, root):
     For every loop and every candidate open edge in that loop, compute the
     TOTAL network ohmic loss (c_e) that results from opening exactly that
     edge, holding every other loop at its default (s_initial) state.
-    Returns {loop_index: {edge: cost}}.
     """
-    all_switchable = set(dg.switchable_edges)
     default_closed = set(dg.fixed_edges)
+
+
     required, _optional = _structurally_required_switchable(dg)
     default_closed.update(required)  # structurally mandatory, regardless of s_initial
     for e in dg.switchable_edges:

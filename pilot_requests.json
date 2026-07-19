@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": "2026-07-19T10:52:08.398489+00:00",
+    "name": "Jane Doe",
+    "facility": "Greenfield Power Tech",
+    "email": "jane.doe@example.com",
+    "peak_load_mva": 15.5
+  }
+]

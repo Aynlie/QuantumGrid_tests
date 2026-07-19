@@ -18,7 +18,6 @@ Everything here runs on your machine:
 """
 import qubo_builder as qb
 import quantum_optimizer as qo
-import network_model as nm
 import power_flow as pf
 
 

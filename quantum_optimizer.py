@@ -200,8 +200,8 @@ def solve_with_classical_sa(Q: dict, var_order: list,
     """
     rng = random.Random(seed)
     n = len(var_order)
-    idx = {v: i for i, v in enumerate(var_order)}
     # Precompute, for each variable, the list of (other_var, coeff) it interacts with.
+
     neighbors = {v: [] for v in var_order}
     diag = {v: 0.0 for v in var_order}
     for (a, b), coeff in Q.items():

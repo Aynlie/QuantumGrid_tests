@@ -10,7 +10,6 @@ Two layers, deliberately separated:
      landing page, shadow-mode metrics/logs, explainability details, and mobile alert mockup.
 """
 import io
-import time
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")  # headless rendering, needed for testing without a display
@@ -56,10 +55,16 @@ def compute_stable_layout(dist_graph, seed: int = 42):
     return nx.spring_layout(G, seed=seed)
 
 def render_topology_figure(dist_graph, switch_assignment: dict, title: str = "Grid Topology",
-                            pos: dict = None):
+                            pos: dict = None, fault_edge: tuple = None,
+                            restored_edge: tuple = None):
     """
     Draw the network: closed edges solid, open edges dashed, node color
     scaled by priority weight. Returns a matplotlib Figure.
+
+    Optional highlight parameters (used for before/after fault cards):
+      fault_edge    : edge to draw as a thick red dashed line (the faulted segment).
+      restored_edge : edge to draw as a thick green solid line (the tie switch closed
+                      for restoration). Both are drawn on top of the regular edge layer.
     """
     G = dist_graph.graph
     if pos is None:
@@ -70,10 +75,22 @@ def render_topology_figure(dist_graph, switch_assignment: dict, title: str = "Gr
             fallback = nx.spring_layout(G, seed=42)
             pos = {**pos, **{n: fallback[n] for n in missing}}
     fig, ax = plt.subplots(figsize=(6, 5))
-    closed_edges = list(dist_graph.fixed_edges)
+    # Separate highlight edges from the regular drawing lists
+    highlight_edges = set()
+    if fault_edge:
+        highlight_edges.add(tuple(sorted(fault_edge)))
+    if restored_edge:
+        highlight_edges.add(tuple(sorted(restored_edge)))
+    closed_edges = []
     open_edges = []
+    for e in dist_graph.fixed_edges:
+        key = tuple(sorted(e))
+        if key not in highlight_edges:
+            closed_edges.append(e)
     for e, is_closed in switch_assignment.items():
-        (closed_edges if is_closed else open_edges).append(e)
+        key = tuple(sorted(e))
+        if key not in highlight_edges:
+            (closed_edges if is_closed else open_edges).append(e)
     priorities = nx.get_node_attributes(G, "priority_weight")
     node_colors = [priorities.get(n, 1.0) for n in G.nodes()]
     nx.draw_networkx_nodes(G, pos, ax=ax, node_color=node_colors,
@@ -83,9 +100,151 @@ def render_topology_figure(dist_graph, switch_assignment: dict, title: str = "Gr
                             style="solid", width=2, edge_color="black")
     nx.draw_networkx_edges(G, pos, ax=ax, edgelist=open_edges,
                             style="dashed", width=1, edge_color="gray")
-    ax.set_title(title)
+    # Draw highlights on top
+    if fault_edge and G.has_edge(*fault_edge):
+        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[fault_edge],
+                                style="dashed", width=3.5, edge_color="#A32D2D")
+        # X marker at midpoint to emphasize fault
+        u, v = fault_edge
+        if u in pos and v in pos:
+            mx = (pos[u][0] + pos[v][0]) / 2
+            my = (pos[u][1] + pos[v][1]) / 2
+            ax.plot(mx, my, marker="x", markersize=14, color="#A32D2D",
+                    markeredgewidth=3, zorder=10)
+    if restored_edge and G.has_edge(*restored_edge):
+        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[restored_edge],
+                                style="solid", width=3.5, edge_color="#0F6E56")
+        # Tick marker at midpoint to emphasize restoration
+        u, v = restored_edge
+        if u in pos and v in pos:
+            mx = (pos[u][0] + pos[v][0]) / 2
+            my = (pos[u][1] + pos[v][1]) / 2
+            ax.plot(mx, my, marker="D", markersize=9, color="#0F6E56",
+                    markeredgewidth=1.5, zorder=10)
+    ax.set_title(title, fontsize=10, fontweight="semibold", pad=8)
     ax.axis("off")
     return fig
+
+
+def render_fault_topology_pair(dist_graph_before, switch_assignment_before: dict,
+                                dist_graph_after, switch_assignment_after: dict,
+                                fault_edge: tuple, restored_edge: tuple = None):
+    """
+    Produce a single matplotlib Figure containing two topology graphs side by side:
+      Left  – "Before: Fault Detected"  (fault_edge highlighted in red)
+      Right – "After: Restored"          (restored_edge highlighted in green)
+
+    Uses a shared node layout computed from the pre-fault graph so both graphs
+    are spatially comparable. Returns a matplotlib Figure.
+    """
+    # Shared layout anchored to the larger pre-fault graph
+    shared_pos = compute_stable_layout(dist_graph_before)
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.2),
+                              facecolor="#F7F6F2",
+                              gridspec_kw={"wspace": 0.08})
+
+    # ── LEFT: Before (fault visible) ──────────────────────────────────────────
+    ax_before = axes[0]
+    G_before = dist_graph_before.graph
+    _draw_topology_on_ax(
+        ax=ax_before, G=G_before, dist_graph=dist_graph_before,
+        switch_assignment=switch_assignment_before, pos=shared_pos,
+        fault_edge=fault_edge, restored_edge=None,
+    )
+    ax_before.set_title("Before — Fault Detected", fontsize=10, fontweight="semibold",
+                         color="#A32D2D", pad=8)
+    ax_before.set_facecolor("#FFF5F5")
+
+    # ── RIGHT: After (restored) ────────────────────────────────────────────────
+    ax_after = axes[1]
+    G_after = dist_graph_after.graph
+    # Extend the shared_pos to cover any node that may appear only in after-graph
+    after_missing = [n for n in G_after.nodes() if n not in shared_pos]
+    if after_missing:
+        fallback = nx.spring_layout(G_after, seed=42)
+        shared_pos_after = {**shared_pos, **{n: fallback[n] for n in after_missing}}
+    else:
+        shared_pos_after = shared_pos
+    _draw_topology_on_ax(
+        ax=ax_after, G=G_after, dist_graph=dist_graph_after,
+        switch_assignment=switch_assignment_after, pos=shared_pos_after,
+        fault_edge=None, restored_edge=restored_edge,
+    )
+    ax_after.set_title("After — Restored", fontsize=10, fontweight="semibold",
+                        color="#0F6E56", pad=8)
+    ax_after.set_facecolor("#F0FBF7")
+
+    fig.patch.set_facecolor("#F7F6F2")
+    fig.tight_layout(pad=1.2)
+    return fig
+
+
+def _draw_topology_on_ax(ax, G, dist_graph, switch_assignment: dict, pos: dict,
+                          fault_edge: tuple = None, restored_edge: tuple = None):
+    """
+    Internal helper: draw a single topology panel onto an existing matplotlib Axes.
+    Keeps render_fault_topology_pair() readable without duplicating draw logic.
+    """
+    highlight_edges = set()
+    if fault_edge:
+        highlight_edges.add(tuple(sorted(fault_edge)))
+    if restored_edge:
+        highlight_edges.add(tuple(sorted(restored_edge)))
+
+    closed_edges = []
+    open_edges = []
+    for e in dist_graph.fixed_edges:
+        if tuple(sorted(e)) not in highlight_edges:
+            closed_edges.append(e)
+    for e, is_closed in switch_assignment.items():
+        if tuple(sorted(e)) not in highlight_edges:
+            (closed_edges if is_closed else open_edges).append(e)
+
+    priorities = nx.get_node_attributes(G, "priority_weight")
+    node_colors = [priorities.get(n, 1.0) for n in G.nodes()]
+
+    nx.draw_networkx_nodes(G, pos, ax=ax, node_color=node_colors,
+                            cmap="YlOrRd", node_size=260, alpha=0.95)
+    nx.draw_networkx_labels(G, pos, ax=ax, font_size=6.5)
+    if closed_edges:
+        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=closed_edges,
+                                style="solid", width=1.6, edge_color="#2C2C2A")
+    if open_edges:
+        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=open_edges,
+                                style="dashed", width=1.0, edge_color="#9E9D97")
+
+    # Fault edge: thick red dashed + X marker
+    if fault_edge and G.has_edge(*fault_edge):
+        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[fault_edge],
+                                style="dashed", width=3.2, edge_color="#A32D2D")
+        u, v = fault_edge
+        if u in pos and v in pos:
+            mx = (pos[u][0] + pos[v][0]) / 2
+            my = (pos[u][1] + pos[v][1]) / 2
+            ax.plot(mx, my, marker="x", markersize=13, color="#A32D2D",
+                    markeredgewidth=2.8, zorder=10)
+            ax.annotate(f"FAULT\n{fault_edge}",
+                        xy=(mx, my), xytext=(mx + 0.06, my + 0.06),
+                        fontsize=6, color="#A32D2D", fontweight="bold",
+                        ha="left", va="bottom")
+
+    # Restored edge: thick green solid + diamond marker
+    if restored_edge and G.has_edge(*restored_edge):
+        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[restored_edge],
+                                style="solid", width=3.2, edge_color="#0F6E56")
+        u, v = restored_edge
+        if u in pos and v in pos:
+            mx = (pos[u][0] + pos[v][0]) / 2
+            my = (pos[u][1] + pos[v][1]) / 2
+            ax.plot(mx, my, marker="D", markersize=9, color="#0F6E56",
+                    markeredgewidth=1.5, zorder=10)
+            ax.annotate(f"TIE CLOSED\n{restored_edge}",
+                        xy=(mx, my), xytext=(mx + 0.06, my + 0.06),
+                        fontsize=6, color="#0F6E56", fontweight="bold",
+                        ha="left", va="bottom")
+
+    ax.axis("off")
 
 def render_voltage_profile_figure(voltages_pu: dict, v_min=0.95, v_max=1.05):
     """
@@ -152,7 +311,6 @@ def render_dashboard():
     Full Streamlit app with multiple pages.
     """
     import streamlit as st
-    import os
     from pathlib import Path
     import data_loader as dl
     import forecasting as fc
@@ -501,7 +659,7 @@ def render_dashboard():
     demand_pu = pipeline_data["demand_pu"]
     solar_pu = pipeline_data["solar_pu"]
     net_load_by_bus = pipeline_data["net_load_by_bus"]
-    dispatch = pipeline_data["dispatch"]
+
 
     # --- QAOA cache lookup (never calls Quapp live) ---
     _QAOA_CACHE_PATH = Path(__file__).resolve().parent / "qaoa_cache.json"
@@ -604,8 +762,10 @@ def render_dashboard():
         }
         st.session_state.cache_misses += 1
         st.session_state.last_solver_time = _time.strftime('%H:%M:%S')
-        print(f"[normal_state_cache] CALLBACK MISS — solver invoked in clear fault handler, result cached "
-              f"(ts={_time.strftime('%H:%M:%S')})")
+
+
+
+
 
     # Sidebar Navigation Router
     st.sidebar.markdown("<h2 style='text-align: center; color: white; margin-bottom: 20px;'>⚡ QuantumGrid</h2>", unsafe_allow_html=True)
@@ -706,7 +866,37 @@ def render_dashboard():
 
         if st.button("Request Pilot Integration"):
             if op_email and facility_name:
-                st.success(f"Thank you, {op_name}! Our engineering team will review the {peak_load} MVA profile for {facility_name} and send a shadow-mode configuration script to {op_email} within 24 hours.")
+                import json as _json
+                from pathlib import Path as _Path
+                import datetime as _datetime
+
+                _log_path = _Path(__file__).resolve().parent / "pilot_requests.json"
+                # Load existing entries (empty list if file is new or blank)
+                if _log_path.exists() and _log_path.stat().st_size > 0:
+                    try:
+                        _existing = _json.loads(_log_path.read_text(encoding="utf-8"))
+                    except _json.JSONDecodeError:
+                        _existing = []
+                else:
+                    _existing = []
+
+                _new_entry = {
+                    "timestamp":     _datetime.datetime.now(tz=_datetime.timezone.utc).isoformat(),
+                    "name":          op_name,
+                    "facility":      facility_name,
+                    "email":         op_email,
+                    "peak_load_mva": peak_load,
+                }
+                _existing.append(_new_entry)
+                _log_path.write_text(
+                    _json.dumps(_existing, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+
+                st.success(
+                    f"Thanks, {op_name} — your details have been logged for our pilot "
+                    f"program. We'll be in touch at {op_email}."
+                )
             else:
                 st.warning("Please fill in your Email Address and Facility Name to request a pilot.")
 
@@ -802,8 +992,6 @@ def render_dashboard():
                 flows         = _cache["flows"]
                 net_injection_peak = _cache["net_injection_peak"]
                 st.session_state.cache_hits += 1
-                print(f"[normal_state_cache] CACHE HIT  — solver NOT re-invoked "
-                      f"(ts={_time.strftime('%H:%M:%S')})")
             else:
                 # ── CACHE MISS — run solver once and store result ──────────
                 net_injection_peak = {b: net_load_by_bus.loc[peak_hour, b]
@@ -826,8 +1014,7 @@ def render_dashboard():
                 }
                 st.session_state.cache_misses += 1
                 st.session_state.last_solver_time = _time.strftime('%H:%M:%S')
-                print(f"[normal_state_cache] CACHE MISS — solver invoked, result cached "
-                      f"(ts={_time.strftime('%H:%M:%S')})")
+
 
         with col1:
             st.markdown(f"""
@@ -1138,7 +1325,43 @@ def render_dashboard():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-                
+
+                # ── Before / After topology visualization ─────────────────────
+                st.markdown(
+                    "<div style='font-size:13px; font-weight:600; color:#1B2A4A; "
+                    "margin: 14px 0 6px 0;'>Feeder Topology — Before &amp; After Restoration</div>",
+                    unsafe_allow_html=True,
+                )
+                # Determine the restored (closed) tie-switch edge for the After graph.
+                # closed_switches was already computed above from res.new_switch_assignment.
+                _restored_tie = closed_switches[0] if closed_switches else None
+
+                # Build the pre-fault distribution graph (full topology, no edge removed).
+                _dist_graph_before = nm.build_distribution_graph(bundle["graph"])
+
+                # The normal-state switch assignment (all ties open = their default state).
+                # We reconstruct it as "all switchable edges open" for the Before view
+                # so it matches the stable radial pre-fault configuration visually.
+                _before_sw_assign = {
+                    e: 0 for e in _dist_graph_before.switchable_edges
+                }
+
+                _topo_fig = render_fault_topology_pair(
+                    dist_graph_before=_dist_graph_before,
+                    switch_assignment_before=_before_sw_assign,
+                    dist_graph_after=res.new_dist_graph,
+                    switch_assignment_after=res.new_switch_assignment,
+                    fault_edge=fault_edge,
+                    restored_edge=_restored_tie,
+                )
+                _buf = io.BytesIO()
+                _topo_fig.savefig(_buf, format="png", dpi=130, bbox_inches="tight",
+                                  facecolor="#F7F6F2")
+                plt.close(_topo_fig)
+                _buf.seek(0)
+                st.image(_buf, use_container_width=True)
+                # ── End topology visualization ─────────────────────────────────
+
                 rec_col1, rec_col2 = st.columns(2)
                 with rec_col1:
                     if st.button("Why this recommendation? (Explainability)"):
@@ -1390,13 +1613,10 @@ def render_dashboard():
                     })
 
             candidate_list = sorted(candidate_list, key=lambda x: x["loss"])
-            
-            print("RAW CANDIDATES FOR RESTORATION CONFIGURATIONS:")
-            for idx, item in enumerate(candidate_list):
-                closed_tie_str = f"Close {item['closed_tie']}" if item['closed_tie'] else "Keep current"
-                print(f"Rank {idx+1}: Switch Actions={closed_tie_str} (Open {item['edge']}), Loss={item['loss']:.6f}, Min V={item['min_v']:.6f}, Feasible={item['feasible']}, Winner={item['winner']}")
-            
             st.markdown("### Ranked Restoration Configurations")
+
+
+
             st.markdown("QuantumGrid evaluates all possible radial spanning trees in the loops. The primary recommendation is shown below:")
             
             # 1. Primary Recommendation (Rank 1 only)
@@ -1627,7 +1847,8 @@ if __name__ == "__main__":
     try:
         from streamlit.runtime import exists as _running_in_streamlit
     except ImportError:
-        _running_in_streamlit = lambda: False
+        def _running_in_streamlit():
+            return False
 
     if _running_in_streamlit():
         # Redundant with the unconditional call to render_dashboard() at line 1414

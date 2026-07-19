@@ -41,8 +41,8 @@ def compute_tree_flows(dg, closed_edges, net_injection, root):
         )
     # Post-order traversal from root: process children before parents so
     # each bus's subtree sum already includes all of its descendants.
-    parent_of = {root: None}
     order = list(nx.dfs_postorder_nodes(T, source=root))
+
     bfs_parent = dict(nx.bfs_predecessors(T, source=root))
     subtree_sum = {bus: net_injection.get(bus, 0.0) for bus in T.nodes()}
     flows = {}

@@ -16,7 +16,6 @@ import data_loader as dl
 import forecasting as fc
 import renewable as rw
 import network_model as nm
-import power_flow as pf
 import qubo_builder as qb
 import quantum_optimizer as qo
 import disaster_recovery as dr
@@ -47,8 +46,8 @@ def main():
     solar_shape = bundle["solar_pu"] / bundle["solar_pu"].max()
     solar_pu = solar_shape * PV_CAPACITY_PU
 
-    features = fc.build_features(demand_pu)
     allocation_factors = fc.compute_allocation_factors(network)
+
     demand_by_bus_pu = fc.disaggregate_forecast_series(demand_pu, allocation_factors)
     pv_capacity = {b: (PV_CAPACITY_PU if b == PV_BUS else 0.0) for b in network.buses}
     pv_factors = rw.compute_pv_allocation_factors(
