@@ -1140,9 +1140,29 @@ def render_dashboard():
             st.session_state.show_demo_banner = True
             st.rerun()
 
+        # Read the QAOA cache to get cached scenarios dynamically
+        _qaoa_edges_str = "(5,6), (2,3), (3,4), (9,10)"
+        try:
+            with open(_QAOA_CACHE_PATH, "r") as _f:
+                _cache_data = json.load(_f)
+            _qaoa_edges_str = ", ".join(k.replace(" ", "") for k in _cache_data.keys())
+        except Exception:
+            pass
+
+        st.info(
+            f"⚛️ **QAOA Execution Design Note:**  \n"
+            f"QAOA runs on real quantum cloud hardware (Quapp), which requires advance job submission "
+            f"and has limited daily access. We've precomputed real QAOA results for a representative "
+            f"set of fault scenarios (currently: **{_qaoa_edges_str}**) so judges can see genuine "
+            f"quantum results without live-demo network risk. Other fault lines use classical "
+            f"simulated annealing and brute-force verification live, with QAOA shown as 'Not Available' "
+            f"rather than substituted or faked."
+        )
+
         # Layout selector
         sim_col1, sim_col2 = st.columns([3, 1])
         with sim_col1:
+
             try:
                 sel_idx = edge_options.index(st.session_state.selected_fault_edge)
             except ValueError:

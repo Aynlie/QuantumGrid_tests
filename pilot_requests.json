@@ -5,5 +5,12 @@
     "facility": "Greenfield Power Tech",
     "email": "jane.doe@example.com",
     "peak_load_mva": 15.5
+  },
+  {
+    "timestamp": "2026-07-19T10:58:46.451811+00:00",
+    "name": "Jaymee Santos",
+    "facility": "Angeles City",
+    "email": "santosjaymee13@gmail.com",
+    "peak_load_mva": 11.0
   }
 ]
