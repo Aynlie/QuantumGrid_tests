@@ -330,6 +330,15 @@ def render_dashboard():
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span {
         color: white !important;
     }
+    /* WCAG AA contrast fix: Operator Profile markdown text.
+       #E8EDF4 on #1B2A4A = ~8.0:1 contrast ratio (well above 4.5:1 AA minimum). */
+    [data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] .stMarkdown li,
+    [data-testid="stSidebar"] .stMarkdown strong {
+        color: #E8EDF4 !important;
+        font-size: 13px !important;
+        line-height: 1.6 !important;
+    }
     
     /* Button custom overrides */
     div.stButton > button {
@@ -338,6 +347,7 @@ def render_dashboard():
         border: 0.5px solid #0F6E56 !important;
         border-radius: 8px !important;
         padding: 8px 16px !important;
+        min-height: 44px !important;
         font-weight: 500 !important;
         transition: all 0.2s ease !important;
         box-shadow: none !important;
@@ -346,6 +356,49 @@ def render_dashboard():
         background-color: #0C5744 !important;
         border-color: #0C5744 !important;
         color: white !important;
+    }
+    /* Accessibility: explicit :focus-visible ring for keyboard navigation.
+       Uses app accent colour so it is visible against both light and dark backgrounds. */
+    div.stButton > button:focus-visible,
+    [data-testid="stSidebar"] *:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    [role="radio"]:focus-visible {
+        outline: 2px solid #0F6E56 !important;
+        outline-offset: 2px !important;
+    }
+    
+    /* Past Events table — compact variant of comp-table */
+    .past-events-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 12px 0 !important;
+        font-size: 13px !important;
+    }
+    .past-events-table th {
+        background-color: #1B2A4A !important;
+        color: white !important;
+        font-weight: 500 !important;
+        text-align: left !important;
+        padding: 9px 12px !important;
+        border: 0.5px solid #2C2C2A !important;
+        white-space: nowrap !important;
+    }
+    .past-events-table td {
+        padding: 9px 12px !important;
+        border: 0.5px solid #2C2C2A !important;
+        background-color: #F1EFE8 !important;
+        font-size: 13px !important;
+        vertical-align: middle !important;
+    }
+    .past-events-table .v-ok {
+        color: #3B6D11 !important;
+        font-weight: 600 !important;
+    }
+    .past-events-table .v-bad {
+        color: #A32D2D !important;
+        font-weight: 600 !important;
     }
     
     /* Mock Phone Container */
@@ -495,6 +548,13 @@ def render_dashboard():
         st.session_state.solver_results = None
     if "selected_fault_edge" not in st.session_state:
         st.session_state.selected_fault_edge = (5, 6)
+    # Past Events table — stores the last 5 simulation event summaries
+    if "past_events" not in st.session_state:
+        st.session_state.past_events = []
+    if "event_counter" not in st.session_state:
+        st.session_state.event_counter = 0
+    if "pending_page" not in st.session_state:
+        st.session_state.pending_page = None
 
     # Sidebar Navigation Router
     st.sidebar.markdown("<h2 style='text-align: center; color: white; margin-bottom: 20px;'>⚡ QuantumGrid</h2>", unsafe_allow_html=True)
@@ -502,6 +562,9 @@ def render_dashboard():
     pages = ["Landing Page", "Shadow-Mode Dashboard", "Why This Recommendation", "Mobile Fault Alert"]
     
     # Sync radio button with session state using key binding for two-way sync
+    if st.session_state.pending_page is not None:
+        st.session_state.page = st.session_state.pending_page
+        st.session_state.pending_page = None
     st.sidebar.radio("Navigation Menu", pages, key="page")
 
     # Sidebar Quick Info
@@ -756,6 +819,60 @@ def render_dashboard():
                         "time_ms": 180.0 if qaoa_available else 0.0,
                     }
                 }
+
+                # --- Build Past Events record (presentation-layer only, no new computation) ---
+                # Reuse voltage data already computed via check_voltage_feasibility
+                _req_sw, _ = qb._structurally_required_switchable(result.new_dist_graph)
+                _closed_ev = set(result.new_dist_graph.fixed_edges) | set(_req_sw)
+                for _e, _s in result.new_switch_assignment.items():
+                    if _s == 1:
+                        _closed_ev.add(_e)
+                _flows_ev = pf.compute_tree_flows(result.new_dist_graph, _closed_ev, net_injection, root=1)
+                _q_flows_ev = {_k: 0.0 for _k in _flows_ev}
+                _v_check_ev = pf.check_voltage_feasibility(result.new_dist_graph, _flows_ev, _q_flows_ev, root=1)
+                _min_v_ev = min(_v_check_ev["voltages_pu"].values()) if _v_check_ev["voltages_pu"] else 1.0
+                _loss_ev = pf.total_ohmic_loss(result.new_dist_graph, _flows_ev)
+
+                # Dynamic solver-count text — same branch logic as the recommendation card
+                _sa_sw_ev = [e for e, s in sa_assignment.items() if s == 1]
+                _bf_sw_ev = [e for e, s in bf_assignment.items() if s == 1]
+                if qaoa_available:
+                    _qaoa_sw_ev = [e for e, s in qaoa_assignment.items() if s == 1]
+                    _all_agree_ev = (_sa_sw_ev == _bf_sw_ev == _qaoa_sw_ev)
+                    _agree_text_ev = "3 of 3 agree" if _all_agree_ev else "3 of 3 — discrepancy"
+                else:
+                    _all_agree_ev = (_sa_sw_ev == _bf_sw_ev)
+                    _agree_text_ev = "2 of 2 agree" if _all_agree_ev else "2 of 2 — discrepancy"
+
+                # Derive recommended switch action string for the record
+                _closed_sw_ev = []
+                for _edge in _req_sw:
+                    _u, _v = _edge
+                    if result.new_dist_graph.graph.edges[_u, _v]["s_initial"] == 0:
+                        _closed_sw_ev.append(_edge)
+                for _edge, _state in result.new_switch_assignment.items():
+                    if _state == 1:
+                        _u, _v = _edge
+                        if result.new_dist_graph.graph.edges[_u, _v]["s_initial"] == 0:
+                            _closed_sw_ev.append(_edge)
+                _sw_action_ev = (
+                    "Close " + ", ".join(f"({u},{v})" for u, v in _closed_sw_ev)
+                    if _closed_sw_ev else "None (keep default)"
+                )
+
+                st.session_state.event_counter += 1
+                _new_event = {
+                    "event_id": st.session_state.event_counter,
+                    "fault_line": str(faulted_edge),
+                    "switch_action": _sw_action_ev,
+                    "min_v_pu": _min_v_ev,
+                    "total_loss": _loss_ev,
+                    "solver_agreement": _agree_text_ev,
+                    "agrees": _all_agree_ev,
+                }
+                # Keep only the last 5 events (newest at front)
+                st.session_state.past_events = ([_new_event] + st.session_state.past_events)[:5]
+
             st.rerun()
 
         # Recommendation Display Section
@@ -837,7 +954,7 @@ def render_dashboard():
                 rec_col1, rec_col2 = st.columns(2)
                 with rec_col1:
                     if st.button("Why this recommendation? (Explainability)"):
-                        st.session_state.page = "Why This Recommendation"
+                        st.session_state.pending_page = "Why This Recommendation"
                         st.rerun()
                 with rec_col2:
                     if st.button("Acknowledge & Clear Fault"):
@@ -907,6 +1024,71 @@ def render_dashboard():
 </div>
 </div>
 </div>""", unsafe_allow_html=True)
+
+        # ---------------------------------------------------------------------------
+        # Past Events table (Goal 1) — last 5 simulation events, display only
+        # ---------------------------------------------------------------------------
+        st.divider()
+        st.subheader("Past Events (Last 5 Simulations)")
+        st.markdown(
+            "<div style='font-size: 13px; color: #5F5E5A; margin-bottom: 10px;'>"
+            "Populated automatically when you trigger a fault simulation above. "
+            "Voltage flag badges are shown in addition to color for accessibility."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        if not st.session_state.past_events:
+            st.markdown(
+                "<div class='q-card' style='padding: 14px 20px !important;'>"
+                "<span style='color: #5F5E5A; font-size: 13px;'>No simulations run yet — "
+                "trigger a fault above to populate this table.</span></div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            _V_THRESH = 0.95  # reuse the same feasibility threshold used everywhere else
+            _pe_rows = ""
+            for _ev in st.session_state.past_events:
+                _v = _ev["min_v_pu"]
+                _v_class = "v-ok" if _v >= _V_THRESH else "v-bad"
+                # Color-is-never-the-only-signal: pair with a text badge on violations
+                _v_flag = (
+                    "" if _v >= _V_THRESH
+                    else " &nbsp;<span class='q-badge q-badge-danger' "
+                         "style='font-size: 11px; padding: 2px 6px;'>&#9888; Voltage Flag</span>"
+                )
+                _agree_cls = "q-badge-success" if _ev["agrees"] else "q-badge-warning"
+                _agree_badge = (
+                    f"<span class='q-badge {_agree_cls}' "
+                    f"style='font-size: 11px; padding: 2px 6px;'>{_ev['solver_agreement']}</span>"
+                )
+                _pe_rows += (
+                    f"<tr>"
+                    f"<td><b>EVT-{_ev['event_id']:03d}</b></td>"
+                    f"<td>{_ev['fault_line']}</td>"
+                    f"<td>{_ev['switch_action']}</td>"
+                    f"<td><span class='{_v_class}'>{_v:.4f} p.u.</span>{_v_flag}</td>"
+                    f"<td>{_ev['total_loss']:.5f} p.u.</td>"
+                    f"<td>{_agree_badge}</td>"
+                    f"</tr>"
+                )
+
+            st.markdown(f"""
+<table class="past-events-table">
+<thead>
+<tr>
+<th>Event ID</th>
+<th>Fault Line</th>
+<th>Recommended Switch Action</th>
+<th>Min Bus Voltage</th>
+<th>Total Ohmic Loss</th>
+<th>Solver Agreement</th>
+</tr>
+</thead>
+<tbody>
+{_pe_rows}
+</tbody>
+</table>""", unsafe_allow_html=True)
 
         # Plots section
         st.divider()
@@ -1133,7 +1315,7 @@ def render_dashboard():
             """)
             
             if st.button("← Return to Dashboard"):
-                st.session_state.page = "Shadow-Mode Dashboard"
+                st.session_state.pending_page = "Shadow-Mode Dashboard"
                 st.rerun()
 
     # ---------------------------------------------------------------------------
@@ -1147,11 +1329,11 @@ def render_dashboard():
         temp_qaoa_assignment, _, temp_qaoa_date = solve_with_qaoa_robust(str((5, 6)))
         if temp_qaoa_assignment is not None:
             temp_date_short = temp_qaoa_date[:10]
-            mobile_badge = f"""<span class="q-badge q-badge-success" style="font-size: 10px !important; padding: 2px 6px !important;">All 3 Solvers Agree</span>
-<span class="q-badge q-badge-info" style="font-size: 10px !important; padding: 2px 6px !important; margin-left: 4px;">QAOA (precomputed {temp_date_short})</span>"""
+            mobile_badge = f"""<span class="q-badge q-badge-success" style="font-size: 11px !important; padding: 2px 6px !important;">All 3 Solvers Agree</span>
+<span class="q-badge q-badge-info" style="font-size: 11px !important; padding: 2px 6px !important; margin-left: 4px;">QAOA (precomputed {temp_date_short})</span>"""
         else:
-            mobile_badge = """<span class="q-badge q-badge-success" style="font-size: 10px !important; padding: 2px 6px !important;">Both Solvers Agree</span>
-<span class="q-badge" style="font-size: 10px !important; padding: 2px 6px !important; background-color: #E8E8E8; color: #999; margin-left: 4px;">QAOA — Not Available</span>"""
+            mobile_badge = """<span class="q-badge q-badge-success" style="font-size: 11px !important; padding: 2px 6px !important;">Both Solvers Agree</span>
+<span class="q-badge" style="font-size: 11px !important; padding: 2px 6px !important; background-color: #E8E8E8; color: #999; margin-left: 4px;">QAOA — Not Available</span>"""
 
         st.markdown(f"""<div class="phone-mockup">
 <div class="phone-status-bar">
@@ -1216,13 +1398,20 @@ Recommendation only — your team switches manually
                             "time_ms": 180.0 if qaoa_available else 0.0,
                         }
                     }
-                st.session_state.page = "Why This Recommendation"
+                st.session_state.pending_page = "Why This Recommendation"
                 st.rerun()
                 
         with col_btn2:
             if st.button("Acknowledge Alert"):
                 st.success("Alert acknowledged. Grid operations team has been notified.")
 
+
+# ---------------------------------------------------------------------------
+# Module-level entry point for Streamlit.
+# When Streamlit runs this file it does NOT set __name__ == "__main__",
+# so render_dashboard() must be called unconditionally at module scope.
+# ---------------------------------------------------------------------------
+render_dashboard()
 
 if __name__ == "__main__":
     try:
