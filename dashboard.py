@@ -820,7 +820,7 @@ def render_dashboard():
 
 
     # Sidebar Navigation Router
-    st.sidebar.markdown("<h2 style='text-align: center; color: white; margin-bottom: 20px;'>⚡ QuantumGrid</h2>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h2 style='text-align: center; color: white; margin-bottom: 20px;'>QuantumGrid</h2>", unsafe_allow_html=True)
     
     pages = ["Landing Page", "Shadow-Mode Dashboard", "Why This Recommendation", "Mobile Fault Alert"]
     
@@ -844,7 +844,7 @@ def render_dashboard():
     _dur_val = st.session_state.get("last_solver_duration_ms", 0.0)
     _dur_str = "< 1" if _dur_val == 0.0 else f"{_dur_val:.1f}"
     st.sidebar.markdown(
-        f"⚡ **Live Performance**  \n"
+        f"**Live Performance**  \n"
         f"Last recommendation delivered in **{_dur_str}** ms. "
         f"**{st.session_state.cache_hits}** repeated views served instantly from cache, avoiding redundant computation."
     )
@@ -884,7 +884,7 @@ def render_dashboard():
         with col1:
             st.markdown("""
             <div class="q-card" style="height: 100%;">
-                <div class="q-card-title">⚡ Core Capabilities</div>
+                <div class="q-card-title">Core Capabilities</div>
                 <div class="q-card-text">
                     <p><b>1. Rapid Fault Restoration</b><br/>Instantly calculates the optimal tie switches to close after a backbone fault, restoring power to critical lateral facilities within seconds.</p>
                     <p><b>2. Ohmic Loss Minimization</b><br/>Dynamically identifies the highest-efficiency loop configuration to save operating costs during normal load profiles.</p>
@@ -897,7 +897,7 @@ def render_dashboard():
         with col2:
             st.markdown("""
             <div class="q-card" style="height: 100%;">
-                <div class="q-card-title">🤝 How a Pilot Works</div>
+                <div class="q-card-title">How a Pilot Works</div>
                 <div class="q-card-text">
                     <ol>
                         <li><b>Send Your One-Line Diagram</b><br/>We load your microgrid's buses, branches, and switch configurations as a simple topology CSV.</li>
@@ -1178,7 +1178,7 @@ def render_dashboard():
             pass
 
         st.info(
-            f"⚛️ **QAOA Execution Design Note:**  \n"
+            f"**QAOA Execution Design Note:**  \n"
             f"QAOA runs on real quantum cloud hardware (Quapp), which requires advance job submission "
             f"and has limited daily access. We've precomputed real QAOA results for a representative "
             f"set of fault scenarios (currently: **{_qaoa_edges_str}**) so judges can see genuine "
@@ -1311,7 +1311,7 @@ def render_dashboard():
             res = st.session_state.simulation_result
             fault_edge = st.session_state.active_fault
             
-            st.markdown(f"### 🚨 Active Fault Incident — Line {fault_edge}")
+            st.markdown(f"### Active Fault Incident — Line {fault_edge}")
             
             if not res.restorable:
                 st.markdown(f"""
@@ -1422,7 +1422,7 @@ def render_dashboard():
                 with rec_col2:
                     st.button("Acknowledge & Clear Fault", on_click=clear_fault_callback)
         else:
-            st.markdown("### 🔍 Ohmic Loss Optimization")
+            st.markdown("### Ohmic Loss Optimization")
             st.markdown("""
             <div class="q-card" style="border-left: 6px solid #0F6E56 !important;">
                 <div class="q-card-title">Recommendation: Maintain Current Configuration (All Tie Switches Open)</div>
@@ -1456,7 +1456,7 @@ def render_dashboard():
 </div>
 </div>
 <div style="font-size: 11px; color: #854F0B; margin-top: 6px;">
-💡 <b>Operator Note:</b> Closed backup switch (8, 21) because local maintenance was scheduled on Bus 12 later that day. Ohmic loss was 0.018 p.u. (vs 0.012 p.u. recommended).
+<b>Operator Note:</b> Closed backup switch (8, 21) because local maintenance was scheduled on Bus 12 later that day. Ohmic loss was 0.018 p.u. (vs 0.012 p.u. recommended).
 </div>
 </div>
 <div class="q-card" style="padding: 12px 20px !important; margin-bottom: 8px !important;">
@@ -1595,7 +1595,7 @@ def render_dashboard():
     # PAGE 3: Why This Recommendation
     # ---------------------------------------------------------------------------
     elif st.session_state.page == "Why This Recommendation":
-        st.markdown("## 🔍 Decision Explainability Detail")
+        st.markdown("## Decision Explainability Detail")
         
         if not st.session_state.active_fault:
             st.info("No active fault simulated. Please visit the **Shadow-Mode Dashboard** and trigger a line fault to view detailed recommendation metrics.")
@@ -1696,7 +1696,7 @@ def render_dashboard():
             if len(candidate_list) > 1:
                 st.markdown(f"""
                 <div style="font-size: 13px; color: #5F5E5A; margin-top: 8px; margin-bottom: 12px; font-style: italic;">
-                    💡 {len(candidate_list) - 1} other tie-switch options were evaluated independently and produced an identical result ({primary_item['loss']:.5f} p.u. loss) — expected given this network's block-diagonal structure at 5 decision variables. See Scale Warning below for detail.
+                    {len(candidate_list) - 1} other tie-switch options were evaluated independently and produced an identical result ({primary_item['loss']:.5f} p.u. loss) — expected given this network's block-diagonal structure at 5 decision variables. See Scale Warning below for detail.
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -1732,7 +1732,7 @@ def render_dashboard():
             qaoa_avail = solvers["qaoa"].get("available", False)
             solver_count_text = "three solvers" if qaoa_avail else "two solvers"
 
-            st.markdown("### 💻 Solver Consensus Verification")
+            st.markdown("### Solver Consensus Verification")
             st.markdown(f"Every recommendation is run across {solver_count_text} to ensure mathematical correctness:")
 
             sol_col1, sol_col2, sol_col3 = st.columns(3)
@@ -1798,7 +1798,7 @@ def render_dashboard():
             # --- Scaling Horizon Card ---
             st.markdown("""
             <div class="q-card" style="margin-top: 20px;">
-                <div class="q-card-title">📈 Solver Scaling Horizon</div>
+                <div class="q-card-title">Solver Scaling Horizon</div>
                 <div class="q-card-text">
                     <p style="margin-bottom: 12px;">To demonstrate the scalability of our optimization engine beyond this demo environment, we measured solver execution speeds at increasing problem sizes. While brute force scales exponentially, classical simulated annealing scales in near-constant time:</p>
                     <table class="comp-table" style="width: 100%; margin-top: 10px; margin-bottom: 10px;">
@@ -1855,7 +1855,7 @@ def render_dashboard():
     # PAGE 4: Mobile Fault Alert
     # ---------------------------------------------------------------------------
     elif st.session_state.page == "Mobile Fault Alert":
-        st.markdown("## 📱 Mobile Notification Preview")
+        st.markdown("## Mobile Notification Preview")
         st.markdown("This screen demonstrates how a mobile notification appears on Marco Villareal's phone during a critical 2:00 AM fault event, providing direct link actions without automatic execution.")
         
         # Look up (5, 6) cache to render the notification mockup dynamically
@@ -1870,18 +1870,18 @@ def render_dashboard():
 
         st.markdown(f"""<div class="phone-mockup">
 <div class="phone-status-bar">
-<span>📶 LTE</span>
+<span>LTE</span>
 <span style="font-weight: 600;">02:14 AM</span>
-<span>🔋 84%</span>
+<span>84%</span>
 </div>
 <div style="text-align: center; margin-top: 12px;">
-<div style="font-size: 28px;">⚡</div>
+<div style="font-size: 16px; font-weight: 600; color: #A32D2D;">OUTAGE</div>
 <div style="font-size: 16px; font-weight: 600; color: #1B2A4A;">QuantumGrid Alert</div>
 <div style="font-size: 11px; color: #5F5E5A; margin-top: 2px;">CRITICAL SYSTEM STATUS</div>
 </div>
 <div class="phone-notification">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-<span style="font-size: 11px; font-weight: 600; color: #A32D2D;">🚨 ACTIVE OUTAGE</span>
+<span style="font-size: 11px; font-weight: 600; color: #A32D2D;">ACTIVE OUTAGE</span>
 <span style="font-size: 10px; color: #5F5E5A;">Just Now</span>
 </div>
 <div style="font-size: 14px; font-weight: 600; color: #1B2A4A;">Fault Detected on Line (5, 6)</div>
