@@ -730,6 +730,8 @@ def render_dashboard():
         st.session_state.cache_misses = 0
     if "last_solver_time" not in st.session_state:
         st.session_state.last_solver_time = "N/A"
+    if "last_solver_duration_ms" not in st.session_state:
+        st.session_state.last_solver_duration_ms = 0.0
 
     def clear_fault_callback():
         import time as _time
@@ -739,6 +741,7 @@ def render_dashboard():
         st.session_state.show_demo_banner = False
         
         # Populate the normal state cache in the callback
+        _t_start = _time.perf_counter()
         _peak_hour = demand_pu.idxmax()
         _net_injection_peak = {b: net_load_by_bus.loc[_peak_hour, b]
                                for b in bundle["graph"].buses}
@@ -752,6 +755,7 @@ def render_dashboard():
         _total_loss = pf.total_ohmic_loss(dist_graph, _flows)
         _total_load = demand_pu.loc[_peak_hour]
         _efficiency = compute_grid_efficiency(_total_load, _total_loss)
+        _t_end = _time.perf_counter()
         
         st.session_state.normal_state_cache = {
             "sa_assignment":    _sa_assignment,
@@ -762,6 +766,8 @@ def render_dashboard():
         }
         st.session_state.cache_misses += 1
         st.session_state.last_solver_time = _time.strftime('%H:%M:%S')
+        st.session_state.last_solver_duration_ms = (_t_end - _t_start) * 1000.0
+
 
 
 
@@ -789,12 +795,14 @@ def render_dashboard():
     - Tie Switches: 5
     """)
     st.sidebar.divider()
-    st.sidebar.markdown(f"""
-    **Solver Execution Cache**
-    - Cache Hits: `{st.session_state.cache_hits}`
-    - Cache Misses: `{st.session_state.cache_misses}`
-    - Last Run Time: `{st.session_state.last_solver_time}`
-    """)
+    _dur_val = st.session_state.get("last_solver_duration_ms", 0.0)
+    _dur_str = "< 1" if _dur_val == 0.0 else f"{_dur_val:.1f}"
+    st.sidebar.markdown(
+        f"⚡ **Live Performance**  \n"
+        f"Last recommendation delivered in **{_dur_str}** ms. "
+        f"**{st.session_state.cache_hits}** repeated views served instantly from cache, avoiding redundant computation."
+    )
+
 
     # ---------------------------------------------------------------------------
     # PAGE 1: Landing Page (Pilot Acquisition)
@@ -992,8 +1000,10 @@ def render_dashboard():
                 flows         = _cache["flows"]
                 net_injection_peak = _cache["net_injection_peak"]
                 st.session_state.cache_hits += 1
+                st.session_state.last_solver_duration_ms = 0.0
             else:
                 # ── CACHE MISS — run solver once and store result ──────────
+                _t_start = _time.perf_counter()
                 net_injection_peak = {b: net_load_by_bus.loc[peak_hour, b]
                                       for b in bundle["graph"].buses}
                 loops = qb.find_switchable_loops(dist_graph)
@@ -1005,6 +1015,8 @@ def render_dashboard():
                 flows = pf.compute_tree_flows(dist_graph, closed_edges, net_injection_peak, root=1)
                 total_loss = pf.total_ohmic_loss(dist_graph, flows)
                 efficiency = compute_grid_efficiency(total_load, total_loss)
+                _t_end = _time.perf_counter()
+                
                 st.session_state.normal_state_cache = {
                     "sa_assignment":    sa_assignment,
                     "total_loss":       total_loss,
@@ -1014,6 +1026,7 @@ def render_dashboard():
                 }
                 st.session_state.cache_misses += 1
                 st.session_state.last_solver_time = _time.strftime('%H:%M:%S')
+                st.session_state.last_solver_duration_ms = (_t_end - _t_start) * 1000.0
 
 
         with col1:
@@ -1066,6 +1079,8 @@ def render_dashboard():
             st.session_state.selected_fault_edge = _demo_edge
 
             if _demo_result.restorable:
+                import time as _time
+                _t_start = _time.perf_counter()
                 _demo_loops = qb.find_switchable_loops(_demo_result.new_dist_graph)
                 _demo_costs = qb.compute_loop_open_costs(_demo_result.new_dist_graph, _demo_loops, _demo_net_injection, root=1)
                 _demo_Q, _demo_var_order = qb.build_qubo(_demo_loops, _demo_costs)
@@ -1073,6 +1088,8 @@ def render_dashboard():
                 _demo_sa_assignment, _demo_sa_energy = qo.solve_with_classical_sa(_demo_Q, _demo_var_order)
                 _demo_bf_assignment, _demo_bf_energy = qb.brute_force_solve(_demo_Q, _demo_var_order)
                 _demo_qaoa_assignment, _demo_qaoa_energy, _demo_qaoa_date = solve_with_qaoa_robust(str(_demo_edge))
+                _t_end = _time.perf_counter()
+                st.session_state.last_solver_duration_ms = (_t_end - _t_start) * 1000.0
 
                 _demo_qaoa_available = _demo_qaoa_assignment is not None
                 st.session_state.solver_results = {
@@ -1198,6 +1215,8 @@ def render_dashboard():
             st.session_state.peak_hour = peak_hour
             
             if result.restorable:
+                import time as _time
+                _t_start = _time.perf_counter()
                 loops = qb.find_switchable_loops(result.new_dist_graph)
                 costs = qb.compute_loop_open_costs(result.new_dist_graph, loops, net_injection, root=1)
                 Q, var_order = qb.build_qubo(loops, costs)
@@ -1205,6 +1224,8 @@ def render_dashboard():
                 sa_assignment, sa_energy = qo.solve_with_classical_sa(Q, var_order)
                 bf_assignment, bf_energy = qb.brute_force_solve(Q, var_order)
                 qaoa_assignment, qaoa_energy, qaoa_date = solve_with_qaoa_robust(str(faulted_edge))
+                _t_end = _time.perf_counter()
+                st.session_state.last_solver_duration_ms = (_t_end - _t_start) * 1000.0
                 
                 qaoa_available = qaoa_assignment is not None
                 st.session_state.solver_results = {
