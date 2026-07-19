@@ -733,6 +733,7 @@ def render_dashboard():
     if "last_solver_duration_ms" not in st.session_state:
         st.session_state.last_solver_duration_ms = 0.0
 
+
     def clear_fault_callback():
         import time as _time
         st.session_state.active_fault = None
@@ -769,8 +770,53 @@ def render_dashboard():
         st.session_state.last_solver_duration_ms = (_t_end - _t_start) * 1000.0
 
 
+    # Pre-declare normal-state variables in local scope
+    normal_sa_assignment = None
+    normal_total_loss = 0.0
+    normal_efficiency = 0.0
+    normal_flows = None
+    normal_net_injection_peak = None
 
-
+    if st.session_state.get("page") == "Shadow-Mode Dashboard" and not st.session_state.get("active_fault"):
+        import time as _time
+        _peak_hour = demand_pu.idxmax()
+        _total_load = demand_pu.loc[_peak_hour]
+        if st.session_state.normal_state_cache is not None:
+            # ── CACHE HIT ──────────────────────────────────────────────
+            _cache = st.session_state.normal_state_cache
+            normal_sa_assignment = _cache["sa_assignment"]
+            normal_total_loss    = _cache["total_loss"]
+            normal_efficiency    = _cache["efficiency"]
+            normal_flows         = _cache["flows"]
+            normal_net_injection_peak = _cache["net_injection_peak"]
+            st.session_state.cache_hits += 1
+            st.session_state.last_solver_duration_ms = 0.0
+        else:
+            # ── CACHE MISS — run solver once and store result ──────────
+            _t_start = _time.perf_counter()
+            normal_net_injection_peak = {b: net_load_by_bus.loc[_peak_hour, b]
+                                         for b in bundle["graph"].buses}
+            loops = qb.find_switchable_loops(dist_graph)
+            costs = qb.compute_loop_open_costs(dist_graph, loops, normal_net_injection_peak, root=1)
+            Q, var_order = qb.build_qubo(loops, costs)
+            normal_sa_assignment, _ = qo.solve_with_classical_sa(Q, var_order)
+            closed_edges = set(dist_graph.fixed_edges)
+            closed_edges.update(e for e, closed in normal_sa_assignment.items() if closed)
+            normal_flows = pf.compute_tree_flows(dist_graph, closed_edges, normal_net_injection_peak, root=1)
+            normal_total_loss = pf.total_ohmic_loss(dist_graph, normal_flows)
+            normal_efficiency = compute_grid_efficiency(_total_load, normal_total_loss)
+            _t_end = _time.perf_counter()
+            
+            st.session_state.normal_state_cache = {
+                "sa_assignment":    normal_sa_assignment,
+                "total_loss":       normal_total_loss,
+                "efficiency":       normal_efficiency,
+                "flows":            normal_flows,
+                "net_injection_peak": normal_net_injection_peak,
+            }
+            st.session_state.cache_misses += 1
+            st.session_state.last_solver_time = _time.strftime('%H:%M:%S')
+            st.session_state.last_solver_duration_ms = (_t_end - _t_start) * 1000.0
 
 
     # Sidebar Navigation Router
@@ -987,46 +1033,11 @@ def render_dashboard():
                 efficiency = 0.0
         else:
             # Normal state - use default solved configuration.
-            # Read from normal_state_cache when available so the full solver
-            # chain (find_switchable_loops → compute_loop_open_costs →
-            # build_qubo → SA) is NOT re-executed on every Streamlit rerun.
-            import time as _time
-            if st.session_state.normal_state_cache is not None:
-                # ── CACHE HIT ──────────────────────────────────────────────
-                _cache = st.session_state.normal_state_cache
-                sa_assignment = _cache["sa_assignment"]
-                total_loss    = _cache["total_loss"]
-                efficiency    = _cache["efficiency"]
-                flows         = _cache["flows"]
-                net_injection_peak = _cache["net_injection_peak"]
-                st.session_state.cache_hits += 1
-                st.session_state.last_solver_duration_ms = 0.0
-            else:
-                # ── CACHE MISS — run solver once and store result ──────────
-                _t_start = _time.perf_counter()
-                net_injection_peak = {b: net_load_by_bus.loc[peak_hour, b]
-                                      for b in bundle["graph"].buses}
-                loops = qb.find_switchable_loops(dist_graph)
-                costs = qb.compute_loop_open_costs(dist_graph, loops, net_injection_peak, root=1)
-                Q, var_order = qb.build_qubo(loops, costs)
-                sa_assignment, _ = qo.solve_with_classical_sa(Q, var_order)
-                closed_edges = set(dist_graph.fixed_edges)
-                closed_edges.update(e for e, closed in sa_assignment.items() if closed)
-                flows = pf.compute_tree_flows(dist_graph, closed_edges, net_injection_peak, root=1)
-                total_loss = pf.total_ohmic_loss(dist_graph, flows)
-                efficiency = compute_grid_efficiency(total_load, total_loss)
-                _t_end = _time.perf_counter()
-                
-                st.session_state.normal_state_cache = {
-                    "sa_assignment":    sa_assignment,
-                    "total_loss":       total_loss,
-                    "efficiency":       efficiency,
-                    "flows":            flows,
-                    "net_injection_peak": net_injection_peak,
-                }
-                st.session_state.cache_misses += 1
-                st.session_state.last_solver_time = _time.strftime('%H:%M:%S')
-                st.session_state.last_solver_duration_ms = (_t_end - _t_start) * 1000.0
+            # Read from variables determined at the top level
+            sa_assignment = normal_sa_assignment
+            total_loss    = normal_total_loss
+            efficiency    = normal_efficiency
+            flows         = normal_flows
 
 
         with col1:
