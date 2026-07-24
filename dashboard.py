@@ -1002,7 +1002,7 @@ def render_dashboard():
                 <span>⚠️</span> SHADOW MODE — RECOMMEND ONLY
             </div>
             <div style="font-size: 13px; color: #5F5E5A; margin-top: 4px;">
-                QuantumGrid is operating in monitoring mode. Automatic switch execution is disabled. The recommendations displayed below must be manually verified and executed by the plant engineering crew.
+                QuantumGrid is operating in monitoring mode. Automatic switch execution is disabled. The recommendations displayed below must be manually verified and executed by the plant engineering crew. Recommendations are delivered in milliseconds; physical switching remains with the operator by design.
             </div>
         </div>
         """, unsafe_allow_html=True)
