@@ -888,7 +888,7 @@ def render_dashboard():
             <div class="q-card" style="height: 100%;">
                 <div class="q-card-title">Core Capabilities</div>
                 <div class="q-card-text">
-                    <p><b>1. Rapid Fault Restoration</b><br/>Instantly calculates the optimal tie switches to close after a backbone fault, restoring power to critical lateral facilities within seconds.</p>
+                    <p><b>1. Rapid Fault Restoration</b><br/>Instantly calculates the optimal tie switches to close after a backbone fault, recommending switch actions for the operator to restore critical lateral facilities.</p>
                     <p><b>2. Ohmic Loss Minimization</b><br/>Dynamically identifies the highest-efficiency loop configuration to save operating costs during normal load profiles.</p>
                     <p><b>3. Multi-Solver Quantum Verification</b><br/>Independently checks recommendations across Classical Simulated Annealing, Brute Force, and QAOA on Quapp Cloud, preventing black-box assumptions.</p>
                     <p><b>4. Solar-Hosting Integration</b><br/>Allocates rooftop generation shapes onto the network model to balance hosting limits and prevent curtailments.</p>

@@ -57,7 +57,7 @@ def simulate_fault(network: dl.NetworkGraph, faulted_edge: tuple,
     reduced_network.branches = reduced_branches
     # Step 2: structural feasibility check using ALL edges of what remains
     # (fixed AND switchable), since a normally-open tie switch is still a
-    # legitimate candidate for restoration.
+    # legitimate candidate to recommend restoration switch actions.
     full_graph = nx.Graph()
     full_graph.add_nodes_from(network.buses.keys())
     full_graph.add_edges_from((b.i, b.j) for b in reduced_branches)
