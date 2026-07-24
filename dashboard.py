@@ -965,7 +965,7 @@ def render_dashboard():
                     <th>Feature / Value</th>
                     <th>Enterprise ADMS (Schneider/Siemens/GE)</th>
                     <th>Quantum Consulting Projects</th>
-                    <th style="background-color: #0F6E56; color: white;">QuantumGrid (CYVE)</th>
+                    <th style="background-color: #0F6E56; color: white;">QuantumGrid (LumenQ)</th>
                 </tr>
             </thead>
             <tbody>
