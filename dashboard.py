@@ -323,7 +323,7 @@ def render_dashboard():
     import ast
     import json
 
-    st.set_page_config(page_title="QuantumGrid — CYVE", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="QuantumGrid — LumenQ", layout="wide", initial_sidebar_state="expanded")
 
     # --- CSS Styling Injection (Design Tokens & Premium Layouts) ---
     st.markdown("""
@@ -724,6 +724,8 @@ def render_dashboard():
     # Invalidated whenever a new fault is triggered or an existing fault is cleared.
     if "normal_state_cache" not in st.session_state:
         st.session_state.normal_state_cache = None
+    if "forecast_cache" not in st.session_state:
+        st.session_state.forecast_cache = None
     if "cache_hits" not in st.session_state:
         st.session_state.cache_hits = 0
     if "cache_misses" not in st.session_state:
@@ -1066,6 +1068,62 @@ def render_dashboard():
                 <div style="font-size: 11px; color: #5F5E5A; margin-top: 4px;">32 backbone segments, 5 loops</div>
             </div>
             """, unsafe_allow_html=True)
+
+        if st.session_state.forecast_cache is None:
+            features = fc.build_features(demand_pu)
+            forecast_res = fc.train_demand_forecaster(features)
+            test_df = features.iloc[forecast_res.split_idx:]
+            X_test = test_df[forecast_res.feature_columns].values
+            y_test = test_df["P_demand_pu"].values
+            y_pred = forecast_res.model.predict(X_test)
+            st.session_state.forecast_cache = {
+                "mae": forecast_res.mae,
+                "rmse": forecast_res.rmse,
+                "mape": forecast_res.mape,
+                "test_index": test_df.index,
+                "y_test": y_test,
+                "y_pred": y_pred
+            }
+
+        fc_cache = st.session_state.forecast_cache
+
+        with st.expander("📈 AI Demand Forecast Performance"):
+            f_col1, f_col2, f_col3 = st.columns(3)
+            with f_col1:
+                st.markdown(f'''
+                <div class="q-card">
+                    <div class="q-metric-label">MAE</div>
+                    <div class="q-metric-value">{fc_cache["mae"]:.4f}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            with f_col2:
+                st.markdown(f'''
+                <div class="q-card">
+                    <div class="q-metric-label">RMSE</div>
+                    <div class="q-metric-value">{fc_cache["rmse"]:.4f}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            with f_col3:
+                st.markdown(f'''
+                <div class="q-card">
+                    <div class="q-metric-label">MAPE</div>
+                    <div class="q-metric-value">{fc_cache["mape"]:.2f}%</div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+            fig_fc, ax_fc = plt.subplots(figsize=(10, 3), facecolor="#F7F6F2")
+            ax_fc.set_facecolor("#F1EFE8")
+            ax_fc.plot(fc_cache["test_index"], fc_cache["y_test"], label="Actual Demand", color="#1B2A4A", alpha=0.7, linewidth=1.5)
+            ax_fc.plot(fc_cache["test_index"], fc_cache["y_pred"], label="Predicted Demand", color="#0F6E56", alpha=0.9, linewidth=1.5)
+            ax_fc.set_ylabel("Demand (p.u.)", fontsize=9, color="#2C2C2A")
+            ax_fc.set_title("Predicted vs Actual Demand (Test Period)", fontsize=10, color="#1B2A4A", fontweight="semibold")
+            ax_fc.grid(True, linestyle=":", alpha=0.5, color="#5F5E5A")
+            for spine in ["top", "right"]:
+                ax_fc.spines[spine].set_visible(False)
+            ax_fc.legend(loc="upper right", fontsize=8, framealpha=0.9, facecolor="#F1EFE8", edgecolor="#2C2C2A")
+            fig_fc.tight_layout()
+            st.pyplot(fig_fc)
+            st.caption("Gradient-boosted regression. No temperature data available — stated explicitly rather than backfilled. Chronological train/test split, no future leakage.")
 
         # Simulation block
         st.divider()

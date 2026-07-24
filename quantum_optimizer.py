@@ -54,11 +54,11 @@ def solve_with_qaoa(Q: dict, var_order: list, reps: int = 1, seed: int = 42):
     qiskit-optimization documentation.
     """
     try:
-        from qiskit_optimization import QuadraticProgram
-        from qiskit_optimization.algorithms import MinimumEigenOptimizer
-        from qiskit_optimization.minimum_eigensolvers import QAOA
-        from qiskit_optimization.optimizers import COBYLA
-        from qiskit.primitives import StatevectorSampler
+        from qiskit_optimization import QuadraticProgram  # pyrefly: ignore[missing-import]
+        from qiskit_optimization.algorithms import MinimumEigenOptimizer  # pyrefly: ignore[missing-import]
+        from qiskit_optimization.minimum_eigensolvers import QAOA  # pyrefly: ignore[missing-import]
+        from qiskit_optimization.optimizers import COBYLA  # pyrefly: ignore[missing-import]
+        from qiskit.primitives import StatevectorSampler  # pyrefly: ignore[missing-import]
     except ImportError as e:
         raise ImportError(
             "Qiskit is not installed. Run: pip install qiskit qiskit-optimization "
@@ -167,7 +167,7 @@ def solve_with_dwave(Q: dict, var_order: list, num_reads: int = 200, use_hardwar
     complete, real code for the user's own environment.
     """
     try:
-        import dimod
+        import dimod  # pyrefly: ignore[missing-import]
     except ImportError as e:
         raise ImportError(
             "dimod is not installed. Run: pip install dimod dwave-neal "
@@ -175,10 +175,10 @@ def solve_with_dwave(Q: dict, var_order: list, num_reads: int = 200, use_hardwar
         ) from e
     bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
     if use_hardware:
-        from dwave.system import DWaveSampler, EmbeddingComposite
+        from dwave.system import DWaveSampler, EmbeddingComposite  # pyrefly: ignore[missing-import]
         sampler = EmbeddingComposite(DWaveSampler())
     else:
-        from neal import SimulatedAnnealingSampler
+        from neal import SimulatedAnnealingSampler  # pyrefly: ignore[missing-import]
         sampler = SimulatedAnnealingSampler()
     sampleset = sampler.sample(bqm, num_reads=num_reads)
     best = sampleset.first

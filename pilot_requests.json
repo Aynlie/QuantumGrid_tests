@@ -12,5 +12,12 @@
     "facility": "Angeles City",
     "email": "santosjaymee13@gmail.com",
     "peak_load_mva": 11.0
+  },
+  {
+    "timestamp": "2026-07-20T16:46:56.195838+00:00",
+    "name": "Jaymee Santos ",
+    "facility": "Angeles Electric",
+    "email": "santosjaymee13@gmail.com",
+    "peak_load_mva": 10.0
   }
 ]

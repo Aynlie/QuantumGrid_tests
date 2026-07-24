@@ -72,6 +72,7 @@ class ForecastResult:
     mae: float
     rmse: float
     mape: float
+    split_idx: int
 def train_demand_forecaster(features_df: pd.DataFrame,
                              target_col: str = "P_demand_pu",
                              test_fraction: float = 0.2) -> ForecastResult:
@@ -107,7 +108,7 @@ def train_demand_forecaster(features_df: pd.DataFrame,
     nonzero = y_test != 0
     mape = float(np.mean(np.abs((y_test[nonzero] - y_pred[nonzero]) / y_test[nonzero])) * 100)
     return ForecastResult(model=model, feature_columns=feature_cols,
-                           mae=mae, rmse=rmse, mape=mape)
+                           mae=mae, rmse=rmse, mape=mape, split_idx=split_idx)
 # ---------------------------------------------------------------------------
 # 3. Per-bus disaggregation
 # ---------------------------------------------------------------------------
