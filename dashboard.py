@@ -824,7 +824,7 @@ def render_dashboard():
     # Sidebar Navigation Router
     st.sidebar.markdown("<h2 style='text-align: center; color: white; margin-bottom: 20px;'>QuantumGrid</h2>", unsafe_allow_html=True)
     
-    pages = ["Landing Page", "Shadow-Mode Dashboard", "Why This Recommendation", "Mobile Fault Alert"]
+    pages = ["Landing Page", "Shadow-Mode Dashboard", "Why This Recommendation", "ASEAN Impact", "Mobile Fault Alert"]
     
     # Sync radio button with session state using key binding for two-way sync
     if st.session_state.pending_page is not None:
@@ -1912,7 +1912,35 @@ def render_dashboard():
                 st.rerun()
 
     # ---------------------------------------------------------------------------
-    # PAGE 4: Mobile Fault Alert
+    # PAGE 4: ASEAN Impact
+    # ---------------------------------------------------------------------------
+    elif st.session_state.page == "ASEAN Impact":
+        st.markdown("## Why This Matters for ASEAN")
+        st.markdown(
+            "Distribution networks across Southeast Asia face severe climate and infrastructure challenges. "
+            "Severe weather events like Typhoon Odette (December 2021, Philippines) demonstrate the catastrophic "
+            "impact of backbone feeder disruptions — causing widespread outages lasting weeks in some regions and "
+            "significant disruption to hospitals, communications, and businesses."
+        )
+        
+        st.markdown("### Where QuantumGrid Fits")
+        st.markdown(
+            "QuantumGrid supports grid operators during these critical events by delivering sub-second restoration "
+            "recommendations to grid operators via shadow-mode deployment, cross-verified across classical and quantum "
+            "solvers. QuantumGrid is designed strictly for decision support and recommendation, empowering human operators "
+            "rather than attempting autonomous physical grid execution."
+        )
+        
+        st.markdown("### Design Principles")
+        st.markdown("""
+        - **Recommendation-only, human-in-the-loop by design (shadow mode)**: Decision support for operators, leaving physical switching decisions in human hands.
+        - **Three-solver cross-verification (classical SA, brute force, QAOA)**: Multi-solver mathematical audit to prevent reliance on any single unverified algorithm.
+        - **Honest disclosure of what's cached vs. live vs. unavailable**: Transparent reporting of precomputed hardware results and live classical computations without faking live execution.
+        - **Architecturally ready to scale beyond IEEE 33-bus**: Built on modular loop-reconfiguration graph models ready to scale as QPUs mature (as demonstrated in the Scaling Horizon card).
+        """)
+
+    # ---------------------------------------------------------------------------
+    # PAGE 5: Mobile Fault Alert
     # ---------------------------------------------------------------------------
     elif st.session_state.page == "Mobile Fault Alert":
         st.markdown("## Mobile Notification Preview")
