@@ -32,6 +32,7 @@ import network_model as nm
 import power_flow as pf
 import qubo_builder as qb
 import quantum_optimizer as qo
+import benders_loop as bl
 import disaster_recovery as dr
 import dashboard as db
 import quapp_client
@@ -148,18 +149,72 @@ def run_pipeline():
     print(f"Optimizing for peak hour: {peak_hour}")
     loops = qb.find_switchable_loops(dist_graph)
     costs = qb.compute_loop_open_costs(dist_graph, loops, net_injection, root=1)
-    Q, var_order = qb.build_qubo(loops, costs)
-    print(f"QUBO built: {len(var_order)} switchable decision variables.")
+    Q, var_order = qb.build_master_qubo(loops, costs)  # cuts={} on iteration 1
+    print(f"Master QUBO built: {len(var_order)} switchable decision variables.")
 
     print("\n" + "=" * 70)
-    print("STAGE 6 -- Quantum / Classical Optimization")
+    print("STAGE 6 -- Benders-Linked Quantum / Classical Optimization")
     print("=" * 70)
-    sa_assignment, sa_energy = qo.solve_with_classical_sa(Q, var_order)
-    bf_assignment, bf_energy = qb.brute_force_solve(Q, var_order)
+    print("Running Algorithm 1 (paper Section 4.4): propose a topology, check "
+          "its exact voltage/thermal feasibility, feed a cut back if it fails, "
+          "repeat -- instead of the old single build-QUBO-once-and-accept-it "
+          "pass. See benders_loop.py's module docstring for the honest scope "
+          "of what iterates here vs. the paper's general MIQCP case.")
+    try:
+        benders_result = bl.run_benders_qaoa_loop(
+            dist_graph, loops, costs, net_injection, root=1,
+            q_injection={}, solver="sa", max_iters=10,
+        )
+    except RuntimeError as exc:
+        # A stalled Benders search is a genuine finding, not a bug: this
+        # feeder's fixed/switchable edge split (32 fixed backbone + 5
+        # ties, see qubo_builder._structurally_required_switchable's
+        # docstring) admits exactly ONE radial topology, so if that one
+        # topology is thermally infeasible, no switching sequence can fix
+        # it -- confirmed here on BOTH peak and median-demand hours, so
+        # this traces to the S_max_pu placeholder on branch (1,2) being
+        # tight relative to this feeder's aggregate per-unit load, not to
+        # which hour is being optimized. Report it plainly and continue
+        # the demo with the (infeasible, best-effort) topology so Stages
+        # 7-8 can still run, rather than crash the whole pipeline.
+        print(f"[Stage 6] No feasible radial topology exists: {exc}")
+        print("[Stage 6] Proceeding with the best-effort (infeasible) "
+              "topology below purely so the rest of this demo can run -- "
+              "see README's 'Known limitations' for the S_max_pu caveat.")
+        Q, var_order = qb.build_master_qubo(loops, costs)
+        best_effort_assignment, best_effort_energy = qo.solve_with_classical_sa(Q, var_order)
+        closed_edges = set(dist_graph.fixed_edges)
+        required, _ = qb._structurally_required_switchable(dist_graph)
+        closed_edges.update(required)
+        closed_edges.update(e for e, s in best_effort_assignment.items() if s == 1)
+        sub = pf.solve_subproblem(dist_graph, closed_edges, net_injection, {}, root=1)
+        benders_result = bl.BendersResult(
+            switch_assignment=best_effort_assignment, subproblem=sub,
+            energy=best_effort_energy, iterations=0, converged=False, cuts={},
+            history=[{"iteration": 0, "assignment": best_effort_assignment,
+                       "energy": best_effort_energy, "phi": sub["phi"],
+                       "feasible": sub["feasible"],
+                       "thermal_violations": sub["thermal_violations"],
+                       "voltage_violations": sub["voltage_violations"]}],
+        )
+    sa_assignment = benders_result.switch_assignment
+    sa_energy = benders_result.energy
+    print(f"[Benders + SA]      {sa_assignment} (energy={sa_energy:.4f}, "
+          f"{benders_result.iterations} Benders iteration(s), "
+          f"feasible={benders_result.subproblem['feasible']})")
+    for h in benders_result.history:
+        status = "feasible" if h["feasible"] else "INFEASIBLE -> cut added"
+        print(f"    iter {h['iteration']}: energy={h['energy']:.4f} -- {status}")
+
+    # Ground-truth cross-check against the FINAL (post-cuts) master QUBO --
+    # i.e. this verifies the solver found the true optimum of the problem
+    # Algorithm 1 actually converged on, not the original iteration-1 one.
+    final_Q, final_var_order = qb.build_master_qubo(loops, costs, cuts=benders_result.cuts)
+    bf_assignment, bf_energy = qb.brute_force_solve(final_Q, final_var_order)
     assert sa_assignment == bf_assignment, "Solver disagreement detected!"
-    print(f"[Classical SA]      {sa_assignment} (energy={sa_energy:.4f})")
     print(f"[Brute force]       {bf_assignment} (energy={bf_energy:.4f})")
-    print("Classical SA matches brute-force ground truth.")
+    print("Classical SA matches brute-force ground truth on the final "
+          "(post-cuts) master QUBO.")
 
     if RUN_QAOA_ON_QUAPP:
         try:
@@ -224,14 +279,25 @@ def run_pipeline():
     else:
         print("[QAOA on Quapp] SKIPPED (RUN_QAOA_ON_QUAPP=False)")
 
-    closed_edges = set(dist_graph.fixed_edges)
-    closed_edges.update(e for e, closed in sa_assignment.items() if closed)
-    flows = pf.compute_tree_flows(dist_graph, closed_edges, net_injection, root=1)
-    total_loss = pf.total_ohmic_loss(dist_graph, flows)
-    q_flows = {k: 0.0 for k in flows}  # reactive flows not modeled at this stage
-    voltage_check = pf.check_voltage_feasibility(dist_graph, flows, q_flows, root=1)
+    # Reuse the subproblem result Benders already computed for this exact
+    # winning topology (benders_loop.py includes structurally-required
+    # switchable edges when building closed_edges; recomputing here from
+    # sa_assignment alone would silently drop them). Same content the old
+    # code computed by hand, now guaranteed consistent with what Stage 6
+    # actually validated as feasible.
+    flows = benders_result.subproblem["flows"]
+    total_loss = benders_result.subproblem["phi"]
+    voltage_check = {
+        "voltages_pu": benders_result.subproblem["voltages_pu"],
+        "violations": benders_result.subproblem["voltage_violations"],
+    }
     print(f"Total ohmic loss at peak hour: {total_loss:.5f} pu")
     print(f"Voltage violations: {voltage_check['violations']}")
+    feasibility_note = ("both already verified feasible by Stage 6's Benders loop"
+                         if benders_result.converged else
+                         "NOTE: this is the best-effort fallback topology -- "
+                         "Stage 6 found NO feasible alternative, see its message above")
+    print(f"Thermal violations: {benders_result.subproblem['thermal_violations']} ({feasibility_note})")
 
     print("\n" + "=" * 70)
     print("STAGE 7 -- Disaster Recovery (simulate a fault on the fixed backbone)")

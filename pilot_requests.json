@@ -1,23 +1,9 @@
 [
   {
-    "timestamp": "2026-07-19T10:52:08.398489+00:00",
+    "timestamp": "2026-07-25T18:04:35.472448+00:00",
     "name": "Jane Doe",
     "facility": "Greenfield Power Tech",
     "email": "jane.doe@example.com",
     "peak_load_mva": 15.5
-  },
-  {
-    "timestamp": "2026-07-19T10:58:46.451811+00:00",
-    "name": "Jaymee Santos",
-    "facility": "Angeles City",
-    "email": "santosjaymee13@gmail.com",
-    "peak_load_mva": 11.0
-  },
-  {
-    "timestamp": "2026-07-20T16:46:56.195838+00:00",
-    "name": "Jaymee Santos ",
-    "facility": "Angeles Electric",
-    "email": "santosjaymee13@gmail.com",
-    "peak_load_mva": 10.0
   }
 ]

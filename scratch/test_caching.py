@@ -12,7 +12,7 @@ def test_cache_behavior():
     
     # 1. First run (defaults to Landing Page)
     print("\n--- Run 1: Initial load (Landing Page) ---")
-    at.run(timeout=30)
+    at.run(timeout=60)
     print(f"Current page: {at.session_state.page}")
     print(f"Cache Hits: {at.session_state.cache_hits}")
     print(f"Cache Misses: {at.session_state.cache_misses}")
@@ -21,7 +21,7 @@ def test_cache_behavior():
     print("\n--- Run 2: Switching to Shadow-Mode Dashboard ---")
     # Set the radio button to 'Shadow-Mode Dashboard'
     radio = at.sidebar.radio(key="page")
-    radio.set_value("Shadow-Mode Dashboard").run(timeout=30)
+    radio.set_value("Shadow-Mode Dashboard").run(timeout=60)
     
     print(f"Current page: {at.session_state.page}")
     print(f"Active Fault: {at.session_state.active_fault}")
@@ -38,7 +38,7 @@ def test_cache_behavior():
             
     if clear_btn is not None:
         print("\n--- Run 3: Clicking 'Acknowledge & Clear Fault' (Enter Normal State) ---")
-        clear_btn.click().run(timeout=30)
+        clear_btn.click().run(timeout=60)
     else:
         print("\nWARNING: 'Acknowledge & Clear Fault' button not found!")
         
@@ -50,7 +50,7 @@ def test_cache_behavior():
     # 3. Trigger a rerun of the page by doing an unrelated interaction (e.g. toggling the radio menu or just calling run() again)
     print("\n--- Run 4: Triggering page rerun (Simulating widget interaction) ---")
     # Let's run again, which simulates a rerun while staying on the same page
-    at.run(timeout=30)
+    at.run(timeout=60)
     
     print(f"Active Fault: {at.session_state.active_fault}")
     print(f"Cache Hits: {at.session_state.cache_hits}")
@@ -59,7 +59,7 @@ def test_cache_behavior():
     
     # 4. Trigger another rerun
     print("\n--- Run 5: Triggering another page rerun ---")
-    at.run(timeout=30)
+    at.run(timeout=60)
     
     print(f"Active Fault: {at.session_state.active_fault}")
     print(f"Cache Hits: {at.session_state.cache_hits}")

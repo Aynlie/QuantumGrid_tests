@@ -8,3 +8,7 @@ __pycache__/
 
 .env
 .vscode/
+venv/
+.pytest_cache/
+tmp/
+

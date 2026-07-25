@@ -190,6 +190,29 @@ def build_qubo(loops, loop_costs, penalty_strength=None):
             key = (e, f) if var_order.index(e) < var_order.index(f) else (f, e)
             Q[key] += 2 * penalty_strength
     return dict(Q), var_order
+def build_master_qubo(loops, loop_costs, cuts=None, penalty_strength=None):
+    """
+    Master QUBO for Algorithm 1 (paper Sec 4.2), scoped to this repo --
+    see benders_loop.py's module docstring for exactly what is and isn't
+    reproduced from the paper's Eq 32-34 (no theta surrogate, no
+    Lagrange-multiplier-weighted optimality cuts: this is build_qubo's
+    existing radial-reconfiguration objective/penalty, plus an optional
+    per-edge feasibility-cut penalty accumulated across Benders
+    iterations by power_flow.generate_feasibility_cut).
+    cuts : {edge: penalty}, as accumulated by the Benders loop. Added
+           directly onto that edge's own diagonal QUBO coefficient (i.e.
+           makes selecting x_e=1 there more expensive, on top of
+           build_qubo's own loss/radiality terms). cuts=None or {}
+           reproduces build_qubo's output unchanged (iteration 1, matching
+           main.py's "# cuts={} on iteration 1" comment at the call site).
+    Returns (Q, var_order), same contract as build_qubo.
+    """
+    Q, var_order = build_qubo(loops, loop_costs, penalty_strength=penalty_strength)
+    if cuts:
+        for e, penalty in cuts.items():
+            if e in var_order:
+                Q[(e, e)] = Q.get((e, e), 0.0) + penalty
+    return Q, var_order
 def evaluate_qubo(Q, assignment: dict) -> float:
     """Evaluate H(x) for a given {var: 0/1} assignment -- used for brute-force checks."""
     energy = 0.0

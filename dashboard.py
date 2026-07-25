@@ -10,11 +10,30 @@ Two layers, deliberately separated:
      landing page, shadow-mode metrics/logs, explainability details, and mobile alert mockup.
 """
 import io
-import pandas as pd
-import matplotlib
-matplotlib.use("Agg")  # headless rendering, needed for testing without a display
-import matplotlib.pyplot as plt
-import networkx as nx
+try:
+    import pandas as pd
+except Exception:  # ImportError or other issues
+    class _MissingPandas:
+        def __getattr__(self, name):
+            raise ImportError("pandas is required for this functionality")
+    pd = _MissingPandas()
+try:
+    import matplotlib
+    matplotlib.use("Agg")  # headless rendering, needed for testing without a display
+    import matplotlib.pyplot as plt
+except Exception:
+    class _MissingMatplotlib:
+        def __getattr__(self, name):
+            raise ImportError("matplotlib is required for this functionality")
+    matplotlib = _MissingMatplotlib()
+    plt = _MissingMatplotlib()
+try:
+    import networkx as nx
+except Exception:
+    class _MissingNetworkX:
+        def __getattr__(self, name):
+            raise ImportError("networkx is required for this functionality")
+    nx = _MissingNetworkX()
 
 # ---------------------------------------------------------------------------
 # 1. Metrics layer (testable without Streamlit)
@@ -310,7 +329,13 @@ def render_dashboard():
     """
     Full Streamlit app with multiple pages.
     """
-    import streamlit as st
+    try:
+        import streamlit as st
+    except Exception:
+        class _MissingStreamlit:
+            def __getattr__(self, name):
+                raise ImportError("streamlit is required for this functionality")
+        st = _MissingStreamlit()
     from pathlib import Path
     import data_loader as dl
     import forecasting as fc
@@ -888,7 +913,7 @@ def render_dashboard():
             <div class="q-card" style="height: 100%;">
                 <div class="q-card-title">Core Capabilities</div>
                 <div class="q-card-text">
-                    <p><b>1. Rapid Fault Restoration</b><br/>Instantly calculates the optimal tie switches to close after a backbone fault, restoring power to critical lateral facilities within seconds.</p>
+                    <p><b>1. Rapid Fault Restoration</b><br/>Instantly calculates the optimal tie switches to close after a backbone fault, recommending switch actions for the operator to restore critical lateral facilities.</p>
                     <p><b>2. Ohmic Loss Minimization</b><br/>Dynamically identifies the highest-efficiency loop configuration to save operating costs during normal load profiles.</p>
                     <p><b>3. Multi-Solver Quantum Verification</b><br/>Independently checks recommendations across Classical Simulated Annealing, Brute Force, and QAOA on Quapp Cloud, preventing black-box assumptions.</p>
                     <p><b>4. Solar-Hosting Integration</b><br/>Allocates rooftop generation shapes onto the network model to balance hosting limits and prevent curtailments.</p>
@@ -1002,7 +1027,7 @@ def render_dashboard():
                 <span>⚠️</span> SHADOW MODE — RECOMMEND ONLY
             </div>
             <div style="font-size: 13px; color: #5F5E5A; margin-top: 4px;">
-                QuantumGrid is operating in monitoring mode. Automatic switch execution is disabled. The recommendations displayed below must be manually verified and executed by the plant engineering crew.
+                QuantumGrid is operating in monitoring mode. Automatic switch execution is disabled. The recommendations displayed below must be manually verified and executed by the plant engineering crew. Recommendations are delivered in milliseconds; physical switching remains with the operator by design.
             </div>
         </div>
         """, unsafe_allow_html=True)

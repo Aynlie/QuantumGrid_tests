@@ -14,7 +14,13 @@ underlying algorithm family (Friedman, 2001) and requires no extra install.
 """
 from dataclasses import dataclass
 import numpy as np
-import pandas as pd
+try:
+    import pandas as pd
+except Exception:
+    class _MissingPandas:
+        def __getattr__(self, name):
+            raise ImportError("pandas is required for this functionality")
+    pd = _MissingPandas()
 from pandas.tseries.holiday import USFederalHolidayCalendar
 try:
     from xgboost import XGBRegressor

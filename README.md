@@ -1,6 +1,6 @@
 # QuantumGrid
 
-Quantum-assisted distribution network reconfiguration on a real IEEE 33-bus feeder, using real hourly demand and solar data. Given the network's tie-switch layout, it decides which switches to open/close to minimize ohmic loss — solved classically (simulated annealing, brute force) and via QAOA on Quapp's cloud simulator, then cross-checked for agreement. Also simulates a backbone fault and finds the tie-switch reconfiguration needed to restore service.
+Quantum-assisted distribution network reconfiguration on a real IEEE 33-bus feeder, using real hourly demand and solar data. Given the network's tie-switch layout, it decides which switches to open/close to minimize ohmic loss — solved classically (simulated annealing, brute force) and via QAOA on Quapp's cloud simulator, then cross-checked for agreement. Also simulates a backbone fault and recommends the tie-switch reconfiguration for the operator to restore service.
 
 ## What's actually real vs. assumed here
 
