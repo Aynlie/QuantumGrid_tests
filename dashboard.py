@@ -1242,7 +1242,9 @@ def render_dashboard():
             f"set of fault scenarios (currently: **{_qaoa_edges_str}**) so judges can see genuine "
             f"quantum results without live-demo network risk. Other fault lines use classical "
             f"simulated annealing and brute-force verification live, with QAOA shown as 'Not Available' "
-            f"rather than substituted or faked."
+            f"rather than substituted or faked. For our Final Presentation, we've built end-to-end integration "
+            f"with qBraid Quantum Jobs (authentication, submission, and network access all verified) to enable "
+            f"live QAOA submission — currently pending a backend fix from qBraid support."
         )
 
         # Layout selector
