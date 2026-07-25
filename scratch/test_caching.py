@@ -1,5 +1,8 @@
 import sys
 import os
+import pytest
+
+pytest.importorskip("streamlit")
 
 # Ensure we can import from parent directory if needed
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

@@ -2023,31 +2023,16 @@ Recommendation only — your team switches manually
                 st.success("Alert acknowledged. Grid operations team has been notified.")
 
 
-# ---------------------------------------------------------------------------
-# Module-level entry point for Streamlit.
-# When Streamlit runs this file it does NOT set __name__ == "__main__",
-# so render_dashboard() must be called unconditionally at module scope.
-# ---------------------------------------------------------------------------
-render_dashboard()
-
-if __name__ == "__main__":
+def _is_running_in_streamlit():
     try:
-        from streamlit.runtime import exists as _running_in_streamlit
-    except ImportError:
-        def _running_in_streamlit():
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        return get_script_run_ctx() is not None
+    except Exception:
+        try:
+            from streamlit.runtime import exists as _exists
+            return _exists()
+        except Exception:
             return False
 
-    if _running_in_streamlit():
-        # Redundant with the unconditional call to render_dashboard() at line 1414
-        pass
-    else:
-        eff = compute_grid_efficiency(total_load_pu=0.75, total_loss_pu=0.02)
-        print(f"Grid efficiency: {eff:.2f}%")
-        ren = compute_renewable_fraction(total_renewable_pu=0.3, total_load_pu=0.75)
-        print(f"Renewable fraction: {ren:.2f}%")
-        comparison = build_solver_comparison_table({
-            "classical_sa": {"energy": -4.8354, "wall_time_s": 0.012},
-            "brute_force": {"energy": -4.8354, "wall_time_s": 0.001},
-        })
-        print("\nSolver comparison table:")
-        print(comparison)
+if __name__ == "__main__" or _is_running_in_streamlit():
+    render_dashboard()
