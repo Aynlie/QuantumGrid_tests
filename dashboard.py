@@ -864,6 +864,12 @@ def render_dashboard():
         </div>
         """, unsafe_allow_html=True)
         
+        st.markdown(
+            "Designed for industrial parks and microgrid operators across Southeast Asia facing severe climate and infrastructure challenges. "
+            "QuantumGrid provides real-time decision support for grid operators during severe weather events and normal operation — delivering "
+            "sub-second, multi-solver verified restoration recommendations without taking physical control away from human operators."
+        )
+        
         # Stat strip
         st.markdown("""
         <div class="stat-strip">
