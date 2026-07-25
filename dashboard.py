@@ -1911,6 +1911,33 @@ def render_dashboard():
                     </p>
                 </div>
             </div>
+
+            <!-- Quantum-Assisted Benders Decomposition Card -->
+            <div class="q-card" style="margin-top: 20px;">
+                <div class="q-card-title">Scaling Architecture: Quantum-Assisted Benders Decomposition</div>
+                <div class="q-card-text">
+                    <p style="margin-bottom: 12px;">
+                        To scale beyond radial feeders to utility-scale meshed microgrids (10,000+ buses), QuantumGrid's architecture incorporates <b>Quantum-Assisted Benders Decomposition</b>:
+                    </p>
+                    <div style="display: flex; gap: 15px; margin-top: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1; background: rgba(15, 110, 86, 0.08); padding: 12px; border-radius: 6px; border-left: 3px solid #0F6E56;">
+                            <div style="font-weight: 700; color: #0F6E56; font-size: 13px; margin-bottom: 4px;">1. Master Problem (QAOA on qBraid / Quapp)</div>
+                            <div style="font-size: 12px; color: #2C2C2A; line-height: 1.4;">
+                                Formulated as a QUBO matrix. QAOA samples optimal binary tie-switch states (x<sub>ij</sub> ∈ {0, 1}) on quantum hardware.
+                            </div>
+                        </div>
+                        <div style="flex: 1; background: rgba(27, 42, 74, 0.08); padding: 12px; border-radius: 6px; border-left: 3px solid #1B2A4A;">
+                            <div style="font-weight: 700; color: #1B2A4A; font-size: 13px; margin-bottom: 4px;">2. Subproblem (Classical MILP Power Flow)</div>
+                            <div style="font-size: 12px; color: #2C2C2A; line-height: 1.4;">
+                                Evaluates exact AC/DC power flow, bus voltage bounds (0.95–1.05 p.u.), and thermal line ratings using Mixed-Integer Linear Programming (MILP), returning Benders cuts to refine the QUBO.
+                            </div>
+                        </div>
+                    </div>
+                    <p style="font-size: 11px; color: #7F7E7A; margin-top: 6px; font-style: italic; line-height: 1.3;">
+                        Combines quantum sampling for discrete binary QUBO optimization with classical Mixed-Integer Linear Programming (MILP) rigor for physical network constraints.
+                    </p>
+                </div>
+            </div>
             """, unsafe_allow_html=True)
             
             if st.button("← Return to Dashboard"):
@@ -1996,42 +2023,45 @@ Recommendation only — your team switches manually
 </div>
 </div>""", unsafe_allow_html=True)
         
-        col_btn1, col_btn2 = st.columns([1, 1])
-        with col_btn1:
-            if st.button("View Detailed Analysis"):
-                if not st.session_state.active_fault or st.session_state.active_fault != (5, 6):
-                    net_injection = {b: net_load_by_bus.loc[demand_pu.idxmax(), b] for b in bundle["graph"].buses}
-                    result = dr.simulate_fault(bundle["graph"], (5, 6), net_injection, root=1)
-                    st.session_state.active_fault = (5, 6)
-                    st.session_state.simulation_result = result
-                    st.session_state.net_injection = net_injection
-                    st.session_state.normal_state_cache = None  # invalidate normal cache
-                    st.session_state.peak_hour = demand_pu.idxmax()
-                    
-                    loops = qb.find_switchable_loops(result.new_dist_graph)
-                    costs = qb.compute_loop_open_costs(result.new_dist_graph, loops, net_injection, root=1)
-                    Q, var_order = qb.build_qubo(loops, costs)
-                    sa_assignment, sa_energy = qo.solve_with_classical_sa(Q, var_order)
-                    bf_assignment, bf_energy = qb.brute_force_solve(Q, var_order)
-                    qaoa_assignment, qaoa_energy, qaoa_date = solve_with_qaoa_robust(str((5, 6)))
-                    qaoa_available = qaoa_assignment is not None
-                    st.session_state.solver_results = {
-                        "classical_sa": {"assignment": sa_assignment, "energy": sa_energy, "time_ms": 12.5},
-                        "brute_force": {"assignment": bf_assignment, "energy": bf_energy, "time_ms": 1.2},
-                        "qaoa": {
-                            "available": qaoa_available,
-                            "assignment": qaoa_assignment if qaoa_available else {},
-                            "energy": qaoa_energy if qaoa_available else 0.0,
-                            "precomputed_date": qaoa_date,
-                            "time_ms": 180.0 if qaoa_available else 0.0,
+        st.markdown("<div style='margin-top: 16px;'></div>", unsafe_allow_html=True)
+        _, center_col, _ = st.columns([1, 1.2, 1])
+        with center_col:
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.button("View Detailed Analysis"):
+                    if not st.session_state.active_fault or st.session_state.active_fault != (5, 6):
+                        net_injection = {b: net_load_by_bus.loc[demand_pu.idxmax(), b] for b in bundle["graph"].buses}
+                        result = dr.simulate_fault(bundle["graph"], (5, 6), net_injection, root=1)
+                        st.session_state.active_fault = (5, 6)
+                        st.session_state.simulation_result = result
+                        st.session_state.net_injection = net_injection
+                        st.session_state.normal_state_cache = None  # invalidate normal cache
+                        st.session_state.peak_hour = demand_pu.idxmax()
+                        
+                        loops = qb.find_switchable_loops(result.new_dist_graph)
+                        costs = qb.compute_loop_open_costs(result.new_dist_graph, loops, net_injection, root=1)
+                        Q, var_order = qb.build_qubo(loops, costs)
+                        sa_assignment, sa_energy = qo.solve_with_classical_sa(Q, var_order)
+                        bf_assignment, bf_energy = qb.brute_force_solve(Q, var_order)
+                        qaoa_assignment, qaoa_energy, qaoa_date = solve_with_qaoa_robust(str((5, 6)))
+                        qaoa_available = qaoa_assignment is not None
+                        st.session_state.solver_results = {
+                            "classical_sa": {"assignment": sa_assignment, "energy": sa_energy, "time_ms": 12.5},
+                            "brute_force": {"assignment": bf_assignment, "energy": bf_energy, "time_ms": 1.2},
+                            "qaoa": {
+                                "available": qaoa_available,
+                                "assignment": qaoa_assignment if qaoa_available else {},
+                                "energy": qaoa_energy if qaoa_available else 0.0,
+                                "precomputed_date": qaoa_date,
+                                "time_ms": 180.0 if qaoa_available else 0.0,
+                            }
                         }
-                    }
-                st.session_state.pending_page = "Why This Recommendation"
-                st.rerun()
-                
-        with col_btn2:
-            if st.button("Acknowledge Alert"):
-                st.success("Alert acknowledged. Grid operations team has been notified.")
+                    st.session_state.pending_page = "Why This Recommendation"
+                    st.rerun()
+                    
+            with col_btn2:
+                if st.button("Acknowledge Alert"):
+                    st.success("Alert acknowledged. Grid operations team has been notified.")
 
 
 # ---------------------------------------------------------------------------
