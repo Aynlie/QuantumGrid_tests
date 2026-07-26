@@ -13,7 +13,13 @@ switch decision variables are produced later by the quantum optimizer
 (Module 6), not by the data loader.
 """
 from dataclasses import dataclass, field
-import pandas as pd
+try:
+    import pandas as pd
+except Exception:
+    class _MissingPandas:
+        def __getattr__(self, name):
+            raise ImportError("pandas is required for this functionality")
+    pd = _MissingPandas()
 # ---------------------------------------------------------------------------
 # 1. Per-unit conversion utilities
 # ---------------------------------------------------------------------------

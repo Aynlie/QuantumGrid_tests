@@ -10,11 +10,30 @@ Two layers, deliberately separated:
      landing page, shadow-mode metrics/logs, explainability details, and mobile alert mockup.
 """
 import io
-import pandas as pd
-import matplotlib
-matplotlib.use("Agg")  # headless rendering, needed for testing without a display
-import matplotlib.pyplot as plt
-import networkx as nx
+try:
+    import pandas as pd
+except Exception:  # ImportError or other issues
+    class _MissingPandas:
+        def __getattr__(self, name):
+            raise ImportError("pandas is required for this functionality")
+    pd = _MissingPandas()
+try:
+    import matplotlib
+    matplotlib.use("Agg")  # headless rendering, needed for testing without a display
+    import matplotlib.pyplot as plt
+except Exception:
+    class _MissingMatplotlib:
+        def __getattr__(self, name):
+            raise ImportError("matplotlib is required for this functionality")
+    matplotlib = _MissingMatplotlib()
+    plt = _MissingMatplotlib()
+try:
+    import networkx as nx
+except Exception:
+    class _MissingNetworkX:
+        def __getattr__(self, name):
+            raise ImportError("networkx is required for this functionality")
+    nx = _MissingNetworkX()
 
 # ---------------------------------------------------------------------------
 # 1. Metrics layer (testable without Streamlit)
@@ -310,7 +329,13 @@ def render_dashboard():
     """
     Full Streamlit app with multiple pages.
     """
-    import streamlit as st
+    try:
+        import streamlit as st
+    except Exception:
+        class _MissingStreamlit:
+            def __getattr__(self, name):
+                raise ImportError("streamlit is required for this functionality")
+        st = _MissingStreamlit()
     from pathlib import Path
     import data_loader as dl
     import forecasting as fc
@@ -864,12 +889,6 @@ def render_dashboard():
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown(
-            "Designed for industrial parks and microgrid operators across Southeast Asia facing severe climate and infrastructure challenges. "
-            "QuantumGrid provides real-time decision support for grid operators during severe weather events and normal operation — delivering "
-            "sub-second, multi-solver verified restoration recommendations without taking physical control away from human operators."
-        )
-        
         # Stat strip
         st.markdown("""
         <div class="stat-strip">
@@ -1248,9 +1267,7 @@ def render_dashboard():
             f"set of fault scenarios (currently: **{_qaoa_edges_str}**) so judges can see genuine "
             f"quantum results without live-demo network risk. Other fault lines use classical "
             f"simulated annealing and brute-force verification live, with QAOA shown as 'Not Available' "
-            f"rather than substituted or faked. For our Final Presentation, we've built end-to-end integration "
-            f"with qBraid Quantum Jobs (authentication, submission, and network access all verified) to enable "
-            f"live QAOA submission — currently pending a backend fix from qBraid support."
+            f"rather than substituted or faked."
         )
 
         # Layout selector
@@ -1972,6 +1989,26 @@ def render_dashboard():
         - **Architecturally ready to scale beyond IEEE 33-bus**: Built on modular loop-reconfiguration graph models ready to scale as QPUs mature (as demonstrated in the Scaling Horizon card).
         """)
 
+        st.markdown("### Economic Impact")
+        st.markdown(
+            "According to the National Disaster Risk Reduction and Management Council, "
+            "Typhoon Odette caused more than PHP 28.68 billion in combined agriculture and "
+            "infrastructure damage across ten regions, including PHP 17.7 billion in "
+            "infrastructure alone. Independent post disaster assessments estimate total "
+            "economic damage and loss at a significantly higher figure once housing and "
+            "broader economic disruption are included. These figures vary by scope and "
+            "source, and we cite the NDRRMC's official agriculture and infrastructure total "
+            "here as the most directly comparable to grid infrastructure loss."
+        )
+        st.markdown(
+            "Power outages from Odette were widespread and prolonged. Two weeks after "
+            "landfall, 161 of 284 affected cities and municipalities had power restored, "
+            "leaving 123 areas still without electricity. Faster, verified restoration "
+            "recommendations during exactly this kind of event are the problem QuantumGrid "
+            "is built to address."
+        )
+        st.caption("Source: NDRRMC Situation Reports, December 2021 to January 2022")
+
     # ---------------------------------------------------------------------------
     # PAGE 5: Mobile Fault Alert
     # ---------------------------------------------------------------------------
@@ -2064,31 +2101,16 @@ Recommendation only — your team switches manually
                     st.success("Alert acknowledged. Grid operations team has been notified.")
 
 
-# ---------------------------------------------------------------------------
-# Module-level entry point for Streamlit.
-# When Streamlit runs this file it does NOT set __name__ == "__main__",
-# so render_dashboard() must be called unconditionally at module scope.
-# ---------------------------------------------------------------------------
-render_dashboard()
-
-if __name__ == "__main__":
+def _is_running_in_streamlit():
     try:
-        from streamlit.runtime import exists as _running_in_streamlit
-    except ImportError:
-        def _running_in_streamlit():
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        return get_script_run_ctx() is not None
+    except Exception:
+        try:
+            from streamlit.runtime import exists as _exists
+            return _exists()
+        except Exception:
             return False
 
-    if _running_in_streamlit():
-        # Redundant with the unconditional call to render_dashboard() at line 1414
-        pass
-    else:
-        eff = compute_grid_efficiency(total_load_pu=0.75, total_loss_pu=0.02)
-        print(f"Grid efficiency: {eff:.2f}%")
-        ren = compute_renewable_fraction(total_renewable_pu=0.3, total_load_pu=0.75)
-        print(f"Renewable fraction: {ren:.2f}%")
-        comparison = build_solver_comparison_table({
-            "classical_sa": {"energy": -4.8354, "wall_time_s": 0.012},
-            "brute_force": {"energy": -4.8354, "wall_time_s": 0.001},
-        })
-        print("\nSolver comparison table:")
-        print(comparison)
+if __name__ == "__main__" or _is_running_in_streamlit():
+    render_dashboard()

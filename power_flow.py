@@ -13,6 +13,7 @@ use the standard flat-voltage (V=1 pu) approximation for loss estimation,
 and a separate linearized voltage-drop check (LinDistFlow) for post-hoc
 feasibility -- both approximations are named explicitly, not hidden.
 """
+from collections import defaultdict
 import networkx as nx
 def compute_tree_flows(dg, closed_edges, net_injection, root):
     """
@@ -102,3 +103,115 @@ def check_voltage_feasibility(dg, flows, q_flows, root, v_root_pu=1.0):
         if not (bus["V_min_pu"] <= v <= bus["V_max_pu"]):
             violations.append(bus_id)
     return {"voltages_pu": voltages, "violations": violations}
+def solve_subproblem(dg, closed_edges, net_injection, q_injection, root):
+    """
+    Benders subproblem (paper Sec 4.3, Eq 35-40), scoped to this repo's
+    zero-free-continuous-DOF tree model: once a candidate topology is
+    fixed, compute_tree_flows already returns THE unique exact flow
+    solution -- there is no LP/NLP left to actually optimize over, so
+    this function's real job is "compute the exact flows/Phi for this
+    candidate, then check the two hard limits (thermal, voltage) that
+    qubo_builder.build_qubo does not enforce in the QUBO itself."
+    See benders_loop.py's module docstring for the full honest-scope
+    statement this implements.
+    q_injection may be {} (reactive power not modeled at this stage,
+    matching main.py's existing q_flows convention elsewhere in the
+    pipeline) -- Q flows come back all-zero in that case.
+    Raises ValueError (propagated directly from compute_tree_flows) if
+    closed_edges is not a valid spanning tree -- callers must catch this
+    themselves as its own distinct kind of infeasibility (see
+    benders_loop.run_benders_qaoa_loop's except ValueError branch).
+    Returns {"phi", "flows", "q_flows", "voltages_pu",
+             "thermal_violations", "voltage_violations", "feasible"}.
+    """
+    flows = compute_tree_flows(dg, closed_edges, net_injection, root)
+    if q_injection:
+        q_flows = compute_tree_flows(dg, closed_edges, q_injection, root)
+    else:
+        q_flows = {edge: 0.0 for edge in flows}
+    phi = total_ohmic_loss(dg, flows)
+    voltage_check = check_voltage_feasibility(dg, flows, q_flows, root)
+    thermal_violations = []
+    for (i, j), p_ij in flows.items():
+        q_ij = q_flows.get((i, j), 0.0)
+        s_ij = (p_ij ** 2 + q_ij ** 2) ** 0.5
+        s_max = dg.graph.edges[i, j]["S_max_pu"]
+        if s_ij > s_max:
+            thermal_violations.append((i, j))
+    voltage_violations = list(voltage_check["violations"])
+    return {
+        "phi": phi,
+        "flows": flows,
+        "q_flows": q_flows,
+        "voltages_pu": voltage_check["voltages_pu"],
+        "thermal_violations": thermal_violations,
+        "voltage_violations": voltage_violations,
+        "feasible": not thermal_violations and not voltage_violations,
+    }
+def generate_feasibility_cut(dg, switchable_edges, assignment, sub, cut_penalty):
+    """
+    Turn one infeasible Benders iteration into {edge: penalty} additions
+    for qubo_builder.build_master_qubo's `cuts` argument.
+    Only CLOSED switchable edges (assignment[e]==1) are ever penalized
+    here -- i.e. this only ever makes closing an edge MORE expensive,
+    never cheaper. Two reasons, specific to this repo's single-chord-
+    per-loop QUBO (qubo_builder.build_qubo): (1) an OPEN optional edge
+    exerts zero influence on tree flows -- it's simply absent from
+    closed_edges, so there's nothing physically to "blame" it for; (2)
+    build_qubo's own radiality penalty already keeps every optional edge
+    at x_e=0 by a wide margin (m = len(loop)-1 = 0 for every singleton
+    loop here), so trying to force x_e=1 via a negative cut would have to
+    outweigh that dominant term -- which risks exactly the non-spanning-
+    -tree failure this module's structural_error branch already exists
+    to catch, rather than a controlled, boundable feasibility cut.
+    Two cases:
+      - sub["structural_error"] set (non-tree candidate): every currently
+        -closed optional edge helped create it -- penalize all of them.
+      - Physically-violated tree: penalize a closed switchable edge if
+        (a) it IS itself a violated thermal line, or (b) a violated
+        line/bus lies in the subtree fed through it (i.e. its closure
+        routes power through the violated area).
+    If no switchable edge is implicated (e.g. the violation is squarely
+    on a structurally-required/fixed edge -- see qubo_builder.
+    _structurally_required_switchable), returns {}: there is genuinely
+    no decision variable that could fix this, and the caller's stall
+    detection (benders_loop.py) is what correctly reports that.
+    """
+    implicated = {}
+    if sub.get("structural_error") is not None:
+        for e in switchable_edges:
+            if assignment.get(e, 0) == 1:
+                implicated[e] = cut_penalty
+        return implicated
+    violated_lines = set(sub.get("thermal_violations", []))
+    violated_buses = set(sub.get("voltage_violations", []))
+    for e in switchable_edges:
+        if assignment.get(e, 0) != 1:
+            continue
+        if e in violated_lines or (e[1], e[0]) in violated_lines:
+            implicated[e] = cut_penalty
+    flows = sub.get("flows")
+    if flows:
+        children = defaultdict(list)
+        for (p, c) in flows:
+            children[p].append(c)
+        def subtree(start):
+            seen, stack = {start}, [start]
+            while stack:
+                n = stack.pop()
+                for ch in children.get(n, []):
+                    if ch not in seen:
+                        seen.add(ch)
+                        stack.append(ch)
+            return seen
+        violated_nodes = set(violated_buses)
+        for (u, v) in violated_lines:
+            violated_nodes.add(u)
+            violated_nodes.add(v)
+        for e in switchable_edges:
+            if assignment.get(e, 0) != 1 or e in implicated:
+                continue
+            downstream = subtree(e[1])
+            if downstream & violated_nodes:
+                implicated[e] = cut_penalty
+    return implicated
