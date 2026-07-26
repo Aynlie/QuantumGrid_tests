@@ -122,23 +122,23 @@ def render_topology_figure(dist_graph, switch_assignment: dict, title: str = "Gr
     # Draw highlights on top
     if fault_edge and G.has_edge(*fault_edge):
         nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[fault_edge],
-                                style="dashed", width=3.5, edge_color="#A32D2D")
+                                style="dashed", width=3.5, edge_color="#C0392B")
         # X marker at midpoint to emphasize fault
         u, v = fault_edge
         if u in pos and v in pos:
             mx = (pos[u][0] + pos[v][0]) / 2
             my = (pos[u][1] + pos[v][1]) / 2
-            ax.plot(mx, my, marker="x", markersize=14, color="#A32D2D",
+            ax.plot(mx, my, marker="x", markersize=14, color="#C0392B",
                     markeredgewidth=3, zorder=10)
     if restored_edge and G.has_edge(*restored_edge):
         nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[restored_edge],
-                                style="solid", width=3.5, edge_color="#0F6E56")
+                                style="solid", width=3.5, edge_color="#1E9E63")
         # Tick marker at midpoint to emphasize restoration
         u, v = restored_edge
         if u in pos and v in pos:
             mx = (pos[u][0] + pos[v][0]) / 2
             my = (pos[u][1] + pos[v][1]) / 2
-            ax.plot(mx, my, marker="D", markersize=9, color="#0F6E56",
+            ax.plot(mx, my, marker="D", markersize=9, color="#1E9E63",
                     markeredgewidth=1.5, zorder=10)
     ax.set_title(title, fontsize=10, fontweight="semibold", pad=8)
     ax.axis("off")
@@ -160,7 +160,7 @@ def render_fault_topology_pair(dist_graph_before, switch_assignment_before: dict
     shared_pos = compute_stable_layout(dist_graph_before)
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 4.2),
-                              facecolor="#F7F6F2",
+                              facecolor="#F5F8FB",
                               gridspec_kw={"wspace": 0.08})
 
     # ── LEFT: Before (fault visible) ──────────────────────────────────────────
@@ -172,8 +172,8 @@ def render_fault_topology_pair(dist_graph_before, switch_assignment_before: dict
         fault_edge=fault_edge, restored_edge=None,
     )
     ax_before.set_title("Before — Fault Detected", fontsize=10, fontweight="semibold",
-                         color="#A32D2D", pad=8)
-    ax_before.set_facecolor("#FFF5F5")
+                         color="#C0392B", pad=8)
+    ax_before.set_facecolor("#FDF2F2")
 
     # ── RIGHT: After (restored) ────────────────────────────────────────────────
     ax_after = axes[1]
@@ -191,10 +191,10 @@ def render_fault_topology_pair(dist_graph_before, switch_assignment_before: dict
         fault_edge=None, restored_edge=restored_edge,
     )
     ax_after.set_title("After — Restored", fontsize=10, fontweight="semibold",
-                        color="#0F6E56", pad=8)
-    ax_after.set_facecolor("#F0FBF7")
+                        color="#1E9E63", pad=8)
+    ax_after.set_facecolor("#F0FDF4")
 
-    fig.patch.set_facecolor("#F7F6F2")
+    fig.patch.set_facecolor("#F5F8FB")
     fig.tight_layout(pad=1.2)
     return fig
 
@@ -228,39 +228,39 @@ def _draw_topology_on_ax(ax, G, dist_graph, switch_assignment: dict, pos: dict,
     nx.draw_networkx_labels(G, pos, ax=ax, font_size=6.5)
     if closed_edges:
         nx.draw_networkx_edges(G, pos, ax=ax, edgelist=closed_edges,
-                                style="solid", width=1.6, edge_color="#2C2C2A")
+                                style="solid", width=1.6, edge_color="#111827")
     if open_edges:
         nx.draw_networkx_edges(G, pos, ax=ax, edgelist=open_edges,
-                                style="dashed", width=1.0, edge_color="#9E9D97")
+                                style="dashed", width=1.0, edge_color="#5B6472")
 
     # Fault edge: thick red dashed + X marker
     if fault_edge and G.has_edge(*fault_edge):
         nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[fault_edge],
-                                style="dashed", width=3.2, edge_color="#A32D2D")
+                                style="dashed", width=3.2, edge_color="#C0392B")
         u, v = fault_edge
         if u in pos and v in pos:
             mx = (pos[u][0] + pos[v][0]) / 2
             my = (pos[u][1] + pos[v][1]) / 2
-            ax.plot(mx, my, marker="x", markersize=13, color="#A32D2D",
+            ax.plot(mx, my, marker="x", markersize=13, color="#C0392B",
                     markeredgewidth=2.8, zorder=10)
             ax.annotate(f"FAULT\n{fault_edge}",
                         xy=(mx, my), xytext=(mx + 0.06, my + 0.06),
-                        fontsize=6, color="#A32D2D", fontweight="bold",
+                        fontsize=6, color="#C0392B", fontweight="bold",
                         ha="left", va="bottom")
 
     # Restored edge: thick green solid + diamond marker
     if restored_edge and G.has_edge(*restored_edge):
         nx.draw_networkx_edges(G, pos, ax=ax, edgelist=[restored_edge],
-                                style="solid", width=3.2, edge_color="#0F6E56")
+                                style="solid", width=3.2, edge_color="#1E9E63")
         u, v = restored_edge
         if u in pos and v in pos:
             mx = (pos[u][0] + pos[v][0]) / 2
             my = (pos[u][1] + pos[v][1]) / 2
-            ax.plot(mx, my, marker="D", markersize=9, color="#0F6E56",
+            ax.plot(mx, my, marker="D", markersize=9, color="#1E9E63",
                     markeredgewidth=1.5, zorder=10)
             ax.annotate(f"TIE CLOSED\n{restored_edge}",
                         xy=(mx, my), xytext=(mx + 0.06, my + 0.06),
-                        fontsize=6, color="#0F6E56", fontweight="bold",
+                        fontsize=6, color="#1E9E63", fontweight="bold",
                         ha="left", va="bottom")
 
     ax.axis("off")
@@ -275,48 +275,48 @@ def render_voltage_profile_figure(voltages_pu: dict, v_min=0.95, v_max=1.05):
     values = [voltages_pu[b] for b in sorted_buses]
     
     # Establish figure
-    fig, ax = plt.subplots(figsize=(7, 3.5), facecolor="#F7F6F2")
-    ax.set_facecolor("#F1EFE8")
+    fig, ax = plt.subplots(figsize=(7, 3.5), facecolor="#F5F8FB")
+    ax.set_facecolor("#E3E9F0")
     
-    # Color bars by whether they violate limits: normal is Teal (#0F6E56), violation is Red (#A32D2D)
+    # Color bars by whether they violate limits: normal is Green (#1E9E63), violation is Red (#C0392B)
     bar_colors = [
-        "#0F6E56" if v_min <= v <= v_max else "#A32D2D"
+        "#1E9E63" if v_min <= v <= v_max else "#C0392B"
         for v in values
     ]
     
     # Render bars
     x_labels = [str(b) for b in sorted_buses]
-    ax.bar(x_labels, values, color=bar_colors, width=0.6, edgecolor="#2C2C2A", linewidth=0.5)
+    ax.bar(x_labels, values, color=bar_colors, width=0.6, edgecolor="#111827", linewidth=0.5)
     
     # Shade allowed operating band
-    ax.axhspan(v_min, v_max, color="#3B6D11", alpha=0.08, label="Feasible Band (0.95 - 1.05 p.u.)")
-    ax.axhline(v_min, color="#A32D2D", linestyle="--", linewidth=1.0)
-    ax.axhline(v_max, color="#A32D2D", linestyle="--", linewidth=1.0)
+    ax.axhspan(v_min, v_max, color="#1E9E63", alpha=0.12, label="Feasible Band (0.95 - 1.05 p.u.)")
+    ax.axhline(v_min, color="#C0392B", linestyle="--", linewidth=1.0)
+    ax.axhline(v_max, color="#C0392B", linestyle="--", linewidth=1.0)
     
     # Zoom Y-axis to show voltage drops clearly (standard operating range is 0.9 - 1.05)
     ax.set_ylim(0.92, 1.06)
     
     # Styling labels and title
-    ax.set_ylabel("Voltage (p.u.)", fontsize=9, color="#2C2C2A", fontweight="medium")
-    ax.set_xlabel("Bus ID", fontsize=9, color="#2C2C2A", fontweight="medium")
-    ax.set_title("Feeder Bus Voltage Profile (LinDistFlow)", fontsize=11, color="#1B2A4A", fontweight="semibold", pad=12)
+    ax.set_ylabel("Voltage (p.u.)", fontsize=9, color="#111827", fontweight="medium")
+    ax.set_xlabel("Bus ID", fontsize=9, color="#111827", fontweight="medium")
+    ax.set_title("Feeder Bus Voltage Profile (LinDistFlow)", fontsize=11, color="#0B1F3A", fontweight="semibold", pad=12)
     
     # Rotate tick labels to prevent overlapping
-    ax.tick_params(axis="x", labelsize=8, rotation=45, labelcolor="#2C2C2A")
-    ax.tick_params(axis="y", labelsize=8, labelcolor="#2C2C2A")
+    ax.tick_params(axis="x", labelsize=8, rotation=45, labelcolor="#111827")
+    ax.tick_params(axis="y", labelsize=8, labelcolor="#111827")
     
     # Add a subtle grid
-    ax.grid(axis="y", linestyle=":", alpha=0.5, color="#5F5E5A")
+    ax.grid(axis="y", linestyle=":", alpha=0.5, color="#5B6472")
     ax.set_axisbelow(True)
     
     # Clean up spines
     for spine in ["top", "right"]:
         ax.spines[spine].set_visible(False)
     for spine in ["left", "bottom"]:
-        ax.spines[spine].set_color("#2C2C2A")
+        ax.spines[spine].set_color("#111827")
         ax.spines[spine].set_linewidth(0.5)
         
-    ax.legend(loc="lower right", fontsize=8, framealpha=0.9, facecolor="#F1EFE8", edgecolor="#2C2C2A")
+    ax.legend(loc="lower right", fontsize=8, framealpha=0.9, facecolor="#E3E9F0", edgecolor="#111827")
     
     # Tight layout to avoid clipping labels
     fig.tight_layout()
@@ -355,39 +355,57 @@ def render_dashboard():
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
     
+    :root {
+        --navy: #0B1F3A;
+        --cyan: #00C2CB;
+        --text-primary: #111827;
+        --text-secondary: #5B6472;
+        --card-fill: #E3E9F0;
+        --bg-panel: #F5F8FB;
+        --amber: #FFB000;
+        --green: #1E9E63;
+        --red: #C0392B;
+    }
+    
     /* General styles */
     .stApp {
-        background-color: #F7F6F2 !important;
+        background-color: var(--bg-panel) !important;
         font-family: 'Outfit', sans-serif !important;
-        color: #2C2C2A !important;
+        color: var(--text-primary) !important;
     }
     
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Outfit', sans-serif !important;
-        color: #1B2A4A !important;
+        color: var(--navy) !important;
         font-weight: 500 !important;
     }
     
     /* Custom Card container */
     .q-card {
-        background-color: #F1EFE8 !important;
-        border: 0.5px solid #2C2C2A !important;
+        background-color: var(--card-fill) !important;
+        border: 0.5px solid #CBD5E1 !important;
         border-radius: 12px !important;
         padding: 20px !important;
         margin-bottom: 16px !important;
         box-shadow: none !important;
+        transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    .q-card:hover {
+        transform: translateY(-2px) !important;
+        border-color: var(--cyan) !important;
+        box-shadow: 0 4px 16px rgba(0, 194, 203, 0.15) !important;
     }
     
     .q-card-title {
         font-size: 18px !important;
         font-weight: 600 !important;
-        color: #1B2A4A !important;
+        color: var(--navy) !important;
         margin-bottom: 8px !important;
     }
     
     .q-card-text {
         font-size: 14px !important;
-        color: #5F5E5A !important;
+        color: var(--text-secondary) !important;
         line-height: 1.5 !important;
     }
     
@@ -403,27 +421,27 @@ def render_dashboard():
         margin-bottom: 6px !important;
     }
     .q-badge-success {
-        color: #3B6D11 !important;
-        background-color: #EAF3DE !important;
+        color: var(--green) !important;
+        background-color: rgba(30, 158, 99, 0.12) !important;
     }
     .q-badge-warning {
-        color: #854F0B !important;
-        background-color: #FAEEDA !important;
+        color: var(--amber) !important;
+        background-color: rgba(255, 176, 0, 0.12) !important;
     }
     .q-badge-danger {
-        color: #A32D2D !important;
-        background-color: #FCEBEB !important;
+        color: var(--red) !important;
+        background-color: rgba(192, 57, 43, 0.12) !important;
     }
     .q-badge-info {
-        color: #1B2A4A !important;
-        background-color: #EAEFF5 !important;
+        color: var(--cyan) !important;
+        background-color: rgba(0, 194, 203, 0.12) !important;
     }
     
     /* Metrics block styling */
     .q-metric-label {
         font-size: 13px !important;
         font-weight: 500 !important;
-        color: #5F5E5A !important;
+        color: var(--text-secondary) !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
         margin-bottom: 4px !important;
@@ -432,7 +450,7 @@ def render_dashboard():
     .q-metric-value {
         font-size: 24px !important;
         font-weight: 600 !important;
-        color: #1B2A4A !important;
+        color: var(--navy) !important;
     }
     
     /* Landing page hero */
@@ -444,14 +462,14 @@ def render_dashboard():
     .hero-headline {
         font-size: 38px !important;
         font-weight: 600 !important;
-        color: #1B2A4A !important;
+        color: var(--navy) !important;
         line-height: 1.25 !important;
         margin-bottom: 12px !important;
     }
     
     .hero-tagline {
         font-size: 18px !important;
-        color: #5F5E5A !important;
+        color: var(--text-secondary) !important;
         margin-bottom: 24px !important;
     }
     
@@ -459,12 +477,12 @@ def render_dashboard():
     .stat-strip {
         display: flex !important;
         justify-content: space-between !important;
-        background-color: #1B2A4A !important;
+        background-color: var(--navy) !important;
         color: white !important;
         padding: 16px 24px !important;
         border-radius: 12px !important;
         margin-bottom: 30px !important;
-        border: 0.5px solid #2C2C2A !important;
+        border: 0.5px solid #CBD5E1 !important;
     }
     .stat-item {
         text-align: center !important;
@@ -473,11 +491,11 @@ def render_dashboard():
     .stat-val {
         font-size: 20px !important;
         font-weight: 600 !important;
-        color: #0F6E56 !important;
+        color: var(--cyan) !important;
     }
     .stat-lbl {
         font-size: 12px !important;
-        color: #EAEFF5 !important;
+        color: var(--card-fill) !important;
     }
     
     /* Comparison table */
@@ -487,28 +505,28 @@ def render_dashboard():
         margin: 20px 0 !important;
     }
     .comp-table th {
-        background-color: #1B2A4A !important;
+        background-color: var(--navy) !important;
         color: white !important;
         font-weight: 500 !important;
         text-align: left !important;
         padding: 12px !important;
-        border: 0.5px solid #2C2C2A !important;
+        border: 0.5px solid #CBD5E1 !important;
     }
     .comp-table td {
         padding: 12px !important;
-        border: 0.5px solid #2C2C2A !important;
-        background-color: #F1EFE8 !important;
+        border: 0.5px solid #CBD5E1 !important;
+        background-color: var(--card-fill) !important;
         font-size: 14px !important;
     }
     .comp-table tr.highlight td {
-        background-color: #EAEFF5 !important;
+        background-color: rgba(0, 194, 203, 0.12) !important;
         font-weight: 600 !important;
     }
     
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background-color: #1B2A4A !important;
-        border-right: 0.5px solid #2C2C2A !important;
+        background-color: var(--navy) !important;
+        border-right: 0.5px solid #CBD5E1 !important;
     }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span {
         color: white !important;
@@ -525,9 +543,9 @@ def render_dashboard():
     
     /* Button custom overrides */
     div.stButton > button {
-        background-color: #0F6E56 !important;
+        background-color: var(--green) !important;
         color: white !important;
-        border: 0.5px solid #0F6E56 !important;
+        border: 0.5px solid var(--green) !important;
         border-radius: 8px !important;
         padding: 8px 16px !important;
         min-height: 44px !important;
@@ -536,8 +554,8 @@ def render_dashboard():
         box-shadow: none !important;
     }
     div.stButton > button:hover {
-        background-color: #0C5744 !important;
-        border-color: #0C5744 !important;
+        background-color: #178050 !important;
+        border-color: #178050 !important;
         color: white !important;
     }
     /* Accessibility: explicit :focus-visible ring for keyboard navigation.
@@ -548,7 +566,7 @@ def render_dashboard():
     select:focus-visible,
     textarea:focus-visible,
     [role="radio"]:focus-visible {
-        outline: 2px solid #0F6E56 !important;
+        outline: 2px solid var(--cyan) !important;
         outline-offset: 2px !important;
     }
     
@@ -560,27 +578,27 @@ def render_dashboard():
         font-size: 13px !important;
     }
     .past-events-table th {
-        background-color: #1B2A4A !important;
+        background-color: var(--navy) !important;
         color: white !important;
         font-weight: 500 !important;
         text-align: left !important;
         padding: 9px 12px !important;
-        border: 0.5px solid #2C2C2A !important;
+        border: 0.5px solid #CBD5E1 !important;
         white-space: nowrap !important;
     }
     .past-events-table td {
         padding: 9px 12px !important;
-        border: 0.5px solid #2C2C2A !important;
-        background-color: #F1EFE8 !important;
+        border: 0.5px solid #CBD5E1 !important;
+        background-color: var(--card-fill) !important;
         font-size: 13px !important;
         vertical-align: middle !important;
     }
     .past-events-table .v-ok {
-        color: #3B6D11 !important;
+        color: var(--green) !important;
         font-weight: 600 !important;
     }
     .past-events-table .v-bad {
-        color: #A32D2D !important;
+        color: var(--red) !important;
         font-weight: 600 !important;
     }
     
@@ -588,9 +606,9 @@ def render_dashboard():
     .phone-mockup {
         width: 350px !important;
         height: 600px !important;
-        border: 12px solid #2C2C2A !important;
+        border: 12px solid var(--text-primary) !important;
         border-radius: 36px !important;
-        background-color: #F7F6F2 !important;
+        background-color: var(--bg-panel) !important;
         padding: 16px !important;
         margin: 0 auto !important;
         display: flex !important;
@@ -601,13 +619,13 @@ def render_dashboard():
         display: flex !important;
         justify-content: space-between !important;
         font-size: 11px !important;
-        color: #5F5E5A !important;
+        color: var(--text-secondary) !important;
         margin-bottom: 12px !important;
         padding: 0 4px !important;
     }
     .phone-notification {
-        background-color: #F1EFE8 !important;
-        border: 0.5px solid #2C2C2A !important;
+        background-color: var(--card-fill) !important;
+        border: 0.5px solid #CBD5E1 !important;
         border-radius: 12px !important;
         padding: 14px !important;
         margin-top: 10px !important;
@@ -616,9 +634,22 @@ def render_dashboard():
         margin-top: auto !important;
         text-align: center !important;
         font-size: 11px !important;
-        color: #5F5E5A !important;
+        color: var(--text-secondary) !important;
         padding-top: 8px !important;
-        border-top: 0.5px solid #2C2C2A !important;
+        border-top: 0.5px solid #CBD5E1 !important;
+    }
+        .live-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--cyan);
+        margin-right: 6px;
+        animation: livePulse 1.8s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+        0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,194,203,0.5); }
+        50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(0,194,203,0); }
     }
     </style>
     """, unsafe_allow_html=True)
@@ -872,8 +903,9 @@ def render_dashboard():
     _dur_str = "< 1" if _dur_val == 0.0 else f"{_dur_val:.1f}"
     st.sidebar.markdown(
         f"**Live Performance**  \n"
-        f"Last recommendation delivered in **{_dur_str}** ms. "
-        f"**{st.session_state.cache_hits}** repeated views served instantly from cache, avoiding redundant computation."
+        f'<span class="live-dot"></span>Last recommendation delivered in **{_dur_str}** ms. '
+        f"**{st.session_state.cache_hits}** repeated views served instantly from cache, avoiding redundant computation.",
+        unsafe_allow_html=True,
     )
 
 
@@ -990,7 +1022,7 @@ def render_dashboard():
                     <th>Feature / Value</th>
                     <th>Enterprise ADMS (Schneider/Siemens/GE)</th>
                     <th>Quantum Consulting Projects</th>
-                    <th style="background-color: #0F6E56; color: white;">QuantumGrid (LumenQ)</th>
+                    <th style="background-color: var(--green); color: white;">QuantumGrid (LumenQ)</th>
                 </tr>
             </thead>
             <tbody>
@@ -998,19 +1030,19 @@ def render_dashboard():
                     <td><b>Recommendation Model</b></td>
                     <td>Proprietary black-box algorithms. No verification data is presented.</td>
                     <td>Custom, one-off scientific scripts. Difficult to audit or run in production.</td>
-                    <td style="background-color: #EAF3DE; font-weight: 500;">Transparent, 3-solver cross-checked consensus. Detailed explainability dashboard.</td>
+                    <td style="background-color: rgba(30, 158, 99, 0.12); font-weight: 500;">Transparent, 3-solver cross-checked consensus. Detailed explainability dashboard.</td>
                 </tr>
                 <tr>
                     <td><b>Setup & Deployment</b></td>
                     <td>6 to 12 months. Requires heavy systems integration and on-site engineering.</td>
                     <td>3 to 6 months of theoretical research. No software interface provided.</td>
-                    <td style="background-color: #EAF3DE; font-weight: 500;">Deploy in days. Purely software-based shadow mode runs on your standard telemetry logs.</td>
+                    <td style="background-color: rgba(30, 158, 99, 0.12); font-weight: 500;">Deploy in days. Purely software-based shadow mode runs on your standard telemetry logs.</td>
                 </tr>
                 <tr>
                     <td><b>Hardware Dependency</b></td>
                     <td>High. Strict vendor lock-in to their specific smart switch hardware.</td>
                     <td>Requires reserved time on physical QPUs. High base costs.</td>
-                    <td style="background-color: #EAF3DE; font-weight: 500;">Hardware agnostic. Runs classical solvers locally and connects to any cloud QPU simulator.</td>
+                    <td style="background-color: rgba(30, 158, 99, 0.12); font-weight: 500;">Hardware agnostic. Runs classical solvers locally and connects to any cloud QPU simulator.</td>
                 </tr>
             </tbody>
         </table>
@@ -1022,11 +1054,11 @@ def render_dashboard():
     elif st.session_state.page == "Shadow-Mode Dashboard":
         # Shadow mode banner
         st.markdown("""
-        <div class="q-card" style="background-color: #FAEEDA !important; border-color: #854F0B !important; margin-bottom: 24px;">
-            <div style="font-size: 15px; font-weight: 600; color: #854F0B; display: flex; align-items: center; gap: 8px;">
+        <div class="q-card" style="background-color: rgba(255, 176, 0, 0.12) !important; border-color: var(--amber) !important; margin-bottom: 24px;">
+            <div style="font-size: 15px; font-weight: 600; color: var(--amber); display: flex; align-items: center; gap: 8px;">
                 <span>⚠️</span> SHADOW MODE — RECOMMEND ONLY
             </div>
-            <div style="font-size: 13px; color: #5F5E5A; margin-top: 4px;">
+            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                 QuantumGrid is operating in monitoring mode. Automatic switch execution is disabled. The recommendations displayed below must be manually verified and executed by the plant engineering crew. Recommendations are delivered in milliseconds; physical switching remains with the operator by design.
             </div>
         </div>
@@ -1072,7 +1104,7 @@ def render_dashboard():
             <div class="q-card">
                 <div class="q-metric-label">Grid Efficiency (Peak)</div>
                 <div class="q-metric-value">{efficiency:.2f}%</div>
-                <div style="font-size: 11px; color: #5F5E5A; margin-top: 4px;">Loss-aware tree flow calculation</div>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Loss-aware tree flow calculation</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1080,8 +1112,8 @@ def render_dashboard():
             st.markdown(f"""
             <div class="q-card">
                 <div class="q-metric-label">Solar Contribution</div>
-                <div class="q-metric-value">{peak_renewable_frac:.1f}% <span style='font-size: 14px; font-weight: 400; color: #5F5E5A;'>Peak</span> | {avg_renewable_frac:.1f}% <span style='font-size: 14px; font-weight: 400; color: #5F5E5A;'>24h Avg</span></div>
-                <div style="font-size: 11px; color: #5F5E5A; margin-top: 4px;">Rooftop capacity allocated to Bus 18</div>
+                <div class="q-metric-value">{peak_renewable_frac:.1f}% <span style='font-size: 14px; font-weight: 400; color: var(--text-secondary);'>Peak</span> | {avg_renewable_frac:.1f}% <span style='font-size: 14px; font-weight: 400; color: var(--text-secondary);'>24h Avg</span></div>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Rooftop capacity allocated to Bus 18</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1090,7 +1122,7 @@ def render_dashboard():
             <div class="q-card">
                 <div class="q-metric-label">Switches Monitored</div>
                 <div class="q-metric-value">5 Tie Switches</div>
-                <div style="font-size: 11px; color: #5F5E5A; margin-top: 4px;">32 backbone segments, 5 loops</div>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">32 backbone segments, 5 loops</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1136,16 +1168,16 @@ def render_dashboard():
                 </div>
                 ''', unsafe_allow_html=True)
 
-            fig_fc, ax_fc = plt.subplots(figsize=(10, 3), facecolor="#F7F6F2")
-            ax_fc.set_facecolor("#F1EFE8")
-            ax_fc.plot(fc_cache["test_index"], fc_cache["y_test"], label="Actual Demand", color="#1B2A4A", alpha=0.7, linewidth=1.5)
-            ax_fc.plot(fc_cache["test_index"], fc_cache["y_pred"], label="Predicted Demand", color="#0F6E56", alpha=0.9, linewidth=1.5)
-            ax_fc.set_ylabel("Demand (p.u.)", fontsize=9, color="#2C2C2A")
-            ax_fc.set_title("Predicted vs Actual Demand (Test Period)", fontsize=10, color="#1B2A4A", fontweight="semibold")
-            ax_fc.grid(True, linestyle=":", alpha=0.5, color="#5F5E5A")
+            fig_fc, ax_fc = plt.subplots(figsize=(10, 3), facecolor="#F5F8FB")
+            ax_fc.set_facecolor("#E3E9F0")
+            ax_fc.plot(fc_cache["test_index"], fc_cache["y_test"], label="Actual Demand", color="#0B1F3A", alpha=0.7, linewidth=1.5)
+            ax_fc.plot(fc_cache["test_index"], fc_cache["y_pred"], label="Predicted Demand", color="#1E9E63", alpha=0.9, linewidth=1.5)
+            ax_fc.set_ylabel("Demand (p.u.)", fontsize=9, color="#111827")
+            ax_fc.set_title("Predicted vs Actual Demand (Test Period)", fontsize=10, color="#0B1F3A", fontweight="semibold")
+            ax_fc.grid(True, linestyle=":", alpha=0.5, color="#5B6472")
             for spine in ["top", "right"]:
                 ax_fc.spines[spine].set_visible(False)
-            ax_fc.legend(loc="upper right", fontsize=8, framealpha=0.9, facecolor="#F1EFE8", edgecolor="#2C2C2A")
+            ax_fc.legend(loc="upper right", fontsize=8, framealpha=0.9, facecolor="#E3E9F0", edgecolor="#111827")
             fig_fc.tight_layout()
             st.pyplot(fig_fc)
             st.caption("Gradient-boosted regression. No temperature data available — stated explicitly rather than backfilled. Chronological train/test split, no future leakage.")
@@ -1400,9 +1432,9 @@ def render_dashboard():
             
             if not res.restorable:
                 st.markdown(f"""
-                <div class="q-card" style="background-color: #FCEBEB !important; border-color: #A32D2D !important;">
-                    <div style="font-size: 16px; font-weight: 600; color: #A32D2D;">❌ UNAVOIDABLE OUTAGE DETECTED</div>
-                    <div style="font-size: 14px; color: #5F5E5A; margin-top: 8px;">
+                <div class="q-card" style="background-color: rgba(192, 57, 43, 0.12) !important; border-color: var(--red) !important;">
+                    <div style="font-size: 16px; font-weight: 600; color: var(--red);">❌ UNAVOIDABLE OUTAGE DETECTED</div>
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-top: 8px;">
                         No physical path exists to restore power to the following lateral bus(es): <b>{list(res.stranded_buses)}</b>. 
                         No switch reconfiguration can route around this topological split. Dispatching maintenance crew directly to the fault location.
                     </div>
@@ -1447,11 +1479,11 @@ def render_dashboard():
                     qaoa_badge = '<span class="q-badge" style="background-color: #E8E8E8; color: #999;">QAOA (Quapp Cloud) · Not Available</span>'
 
                 st.markdown(f"""
-                <div class="q-card" style="border-left: 6px solid #A32D2D !important;">
+                <div class="q-card" style="border-left: 6px solid var(--red) !important;">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
-                            <div style="font-size: 16px; font-weight: 600; color: #1B2A4A; margin-bottom: 4px;">Recommended Action: Close Tie Switch {switch_str}</div>
-                            <div style="font-size: 14px; color: #2C2C2A; font-weight: 500;">Restoration outcome: 100% of buses served. Ohmic loss post-fault: {efficiency:.4f} p.u.</div>
+                            <div style="font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 4px;">Recommended Action: Close Tie Switch {switch_str}</div>
+                            <div style="font-size: 14px; color: var(--text-primary); font-weight: 500;">Restoration outcome: 100% of buses served. Ohmic loss post-fault: {efficiency:.4f} p.u.</div>
                         </div>
                         <span class="q-badge {badge_style}">{agreement_text}</span>
                     </div>
@@ -1493,7 +1525,7 @@ def render_dashboard():
                 )
                 _buf = io.BytesIO()
                 _topo_fig.savefig(_buf, format="png", dpi=130, bbox_inches="tight",
-                                  facecolor="#F7F6F2")
+                                  facecolor="#F5F8FB")
                 plt.close(_topo_fig)
                 _buf.seek(0)
                 st.image(_buf, use_container_width=True)
@@ -1509,11 +1541,11 @@ def render_dashboard():
         else:
             st.markdown("### Ohmic Loss Optimization")
             st.markdown("""
-            <div class="q-card" style="border-left: 6px solid #0F6E56 !important;">
+            <div class="q-card" style="border-left: 6px solid var(--green) !important;">
                 <div class="q-card-title">Recommendation: Maintain Current Configuration (All Tie Switches Open)</div>
                 <div class="q-card-text">
                     <p><b>Estimated Ohmic Loss:</b> 0.00917 p.u. (Feasible, No voltage violations)</p>
-                    <p style="color: #854F0B; font-weight: 500;">⚠️ Model Limitation Notice:</p>
+                    <p style="color: var(--amber); font-weight: 500;">⚠️ Model Limitation Notice:</p>
                     <p style="font-size: 13px;">The network model currently utilizes a placeholder resistance value of <b>0.5Ω</b> for all tie switches, which is significantly higher than the backbone line resistances (0.01Ω – 0.09Ω). As a result, closing any tie switch in the simulation introduces artificial losses, making the "all ties open" state mathematically optimal for normal profiles. Measured switch resistances will be integrated during the pilot stage to provide real reconfiguration gains.</p>
                 </div>
             </div>
@@ -1524,32 +1556,32 @@ def render_dashboard():
         st.subheader("Recent Recommendations Log (Shadow Mode)")
         st.markdown("""
         <div style="margin-bottom: 12px;">
-            <div style="font-size: 14px; color: #2C2C2A; font-weight: 600;">Match-Rate Summary:</div>
-            <div style="font-size: 13px; color: #5F5E5A;">12 of 14 recommendations matched operator decisions this month (85.7% match rate)</div>
+            <div style="font-size: 14px; color: var(--text-primary); font-weight: 600;">Match-Rate Summary:</div>
+            <div style="font-size: 13px; color: var(--text-secondary);">12 of 14 recommendations matched operator decisions this month (85.7% match rate)</div>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("""<div class="q-card" style="padding: 12px 20px !important; margin-bottom: 8px !important;">
 <div style="display: flex; justify-content: space-between; align-items: center;">
 <div>
-<span style="font-size: 12px; color: #5F5E5A;">2026-07-15 14:32:00</span>
-<div style="font-size: 14px; font-weight: 500; color: #1B2A4A; margin-top: 2px;">Line (10, 11) Outage — Recommend: Close (12, 22)</div>
-<div style="font-size: 13px; color: #5F5E5A; margin-top: 2px;">Operator Action: Closed switch (8, 21) instead.</div>
+<span style="font-size: 12px; color: var(--text-secondary);">2026-07-15 14:32:00</span>
+<div style="font-size: 14px; font-weight: 500; color: var(--navy); margin-top: 2px;">Line (10, 11) Outage — Recommend: Close (12, 22)</div>
+<div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">Operator Action: Closed switch (8, 21) instead.</div>
 </div>
 <div>
 <span class="q-badge q-badge-warning">Operator Chose Differently</span>
 </div>
 </div>
-<div style="font-size: 11px; color: #854F0B; margin-top: 6px;">
+<div style="font-size: 11px; color: var(--amber); margin-top: 6px;">
 <b>Operator Note:</b> Closed backup switch (8, 21) because local maintenance was scheduled on Bus 12 later that day. Ohmic loss was 0.018 p.u. (vs 0.012 p.u. recommended).
 </div>
 </div>
 <div class="q-card" style="padding: 12px 20px !important; margin-bottom: 8px !important;">
 <div style="display: flex; justify-content: space-between; align-items: center;">
 <div>
-<span style="font-size: 12px; color: #5F5E5A;">2026-07-15 02:12:00</span>
-<div style="font-size: 14px; font-weight: 500; color: #1B2A4A; margin-top: 2px;">Line (5, 6) Outage — Recommend: Close (9, 15)</div>
-<div style="font-size: 13px; color: #5F5E5A; margin-top: 2px;">Operator Action: Closed switch (9, 15).</div>
+<span style="font-size: 12px; color: var(--text-secondary);">2026-07-15 02:12:00</span>
+<div style="font-size: 14px; font-weight: 500; color: var(--navy); margin-top: 2px;">Line (5, 6) Outage — Recommend: Close (9, 15)</div>
+<div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">Operator Action: Closed switch (9, 15).</div>
 </div>
 <div>
 <span class="q-badge q-badge-success">Recommendation Matched</span>
@@ -1559,9 +1591,9 @@ def render_dashboard():
 <div class="q-card" style="padding: 12px 20px !important; margin-bottom: 8px !important;">
 <div style="display: flex; justify-content: space-between; align-items: center;">
 <div>
-<span style="font-size: 12px; color: #5F5E5A;">2026-07-14 18:00:00</span>
-<div style="font-size: 14px; font-weight: 500; color: #1B2A4A; margin-top: 2px;">Ohmic Loss Optimization — Recommend: Keep all open</div>
-<div style="font-size: 13px; color: #5F5E5A; margin-top: 2px;">Operator Action: Kept all open.</div>
+<span style="font-size: 12px; color: var(--text-secondary);">2026-07-14 18:00:00</span>
+<div style="font-size: 14px; font-weight: 500; color: var(--navy); margin-top: 2px;">Ohmic Loss Optimization — Recommend: Keep all open</div>
+<div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">Operator Action: Kept all open.</div>
 </div>
 <div>
 <span class="q-badge q-badge-success">Recommendation Matched</span>
@@ -1575,7 +1607,7 @@ def render_dashboard():
         st.divider()
         st.subheader("Past Events (Last 5 Simulations)")
         st.markdown(
-            "<div style='font-size: 13px; color: #5F5E5A; margin-bottom: 10px;'>"
+            "<div style='font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;'>"
             "Populated automatically when you trigger a fault simulation above. "
             "Voltage flag badges are shown in addition to color for accessibility."
             "</div>",
@@ -1585,7 +1617,7 @@ def render_dashboard():
         if not st.session_state.past_events:
             st.markdown(
                 "<div class='q-card' style='padding: 14px 20px !important;'>"
-                "<span style='color: #5F5E5A; font-size: 13px;'>No simulations run yet — "
+                "<span style='color: var(--text-secondary); font-size: 13px;'>No simulations run yet — "
                 "trigger a fault above to populate this table.</span></div>",
                 unsafe_allow_html=True,
             )
@@ -1780,7 +1812,7 @@ def render_dashboard():
             # 2. Secondary note below
             if len(candidate_list) > 1:
                 st.markdown(f"""
-                <div style="font-size: 13px; color: #5F5E5A; margin-top: 8px; margin-bottom: 12px; font-style: italic;">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 12px; font-style: italic;">
                     {len(candidate_list) - 1} other tie-switch options were evaluated independently and produced an identical result ({primary_item['loss']:.5f} p.u. loss) — expected given this network's block-diagonal structure at 5 decision variables. See Scale Warning below for detail.
                 </div>
                 """, unsafe_allow_html=True)
@@ -1825,8 +1857,8 @@ def render_dashboard():
             with sol_col1:
                 st.markdown(f"""
                 <div class="q-card">
-                    <div style="font-size: 15px; font-weight: 600; color: #1B2A4A;">Classical Simulated Annealing</div>
-                    <div style="font-size: 13px; color: #5F5E5A; margin-top: 4px;">
+                    <div style="font-size: 15px; font-weight: 600; color: var(--navy);">Classical Simulated Annealing</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                         <p><b>Energy:</b> {solvers['classical_sa']['energy']:.4f}</p>
                         <p><b>Compute Time:</b> {solvers['classical_sa']['time_ms']:.1f} ms</p>
                         <p><span class="q-badge q-badge-success">Verified Optimal</span></p>
@@ -1837,8 +1869,8 @@ def render_dashboard():
             with sol_col2:
                 st.markdown(f"""
                 <div class="q-card">
-                    <div style="font-size: 15px; font-weight: 600; color: #1B2A4A;">Brute Force Ground Truth</div>
-                    <div style="font-size: 13px; color: #5F5E5A; margin-top: 4px;">
+                    <div style="font-size: 15px; font-weight: 600; color: var(--navy);">Brute Force Ground Truth</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                         <p><b>Energy:</b> {solvers['brute_force']['energy']:.4f}</p>
                         <p><b>Compute Time:</b> {solvers['brute_force']['time_ms']:.1f} ms</p>
                         <p><span class="q-badge q-badge-success">Verified Ground Truth</span></p>
@@ -1852,8 +1884,8 @@ def render_dashboard():
                     qaoa_date_short = qaoa_sol["precomputed_date"][:10]
                     st.markdown(f"""
                     <div class="q-card">
-                        <div style="font-size: 15px; font-weight: 600; color: #1B2A4A;">QAOA on Quapp</div>
-                        <div style="font-size: 13px; color: #5F5E5A; margin-top: 4px;">
+                        <div style="font-size: 15px; font-weight: 600; color: var(--navy);">QAOA on Quapp</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                             <p><b>Energy:</b> {qaoa_sol['energy']:.4f}</p>
                             <p><b>Compute Time:</b> {qaoa_sol['time_ms']:.1f} ms</p>
                             <p><span class="q-badge q-badge-info">Precomputed on {qaoa_date_short}</span></p>
@@ -1863,8 +1895,8 @@ def render_dashboard():
                 else:
                     st.markdown("""
                     <div class="q-card" style="opacity: 0.55;">
-                        <div style="font-size: 15px; font-weight: 600; color: #1B2A4A;">QAOA on Quapp</div>
-                        <div style="font-size: 13px; color: #5F5E5A; margin-top: 4px;">
+                        <div style="font-size: 15px; font-weight: 600; color: var(--navy);">QAOA on Quapp</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                             <p>QAOA result not available for this scenario.</p>
                             <p>Run <code>precompute_qaoa_cache.py</code> with a live Quapp token to populate.</p>
                             <p><span class="q-badge" style="background-color: #E8E8E8; color: #999;">Not Available</span></p>
@@ -1922,10 +1954,10 @@ def render_dashboard():
                             </tr>
                         </tbody>
                     </table>
-                    <p style="font-weight: 500; color: #1B2A4A; margin-top: 12px; margin-bottom: 4px;">
+                    <p style="font-weight: 500; color: var(--navy); margin-top: 12px; margin-bottom: 4px;">
                         <b>Takeaway:</b> This demo runs at n=5, where every solver is instant. Brute force scales exponentially (2^n) — by n=20 it takes ~3.9 seconds on synthetic test networks; classical SA stays flat regardless of size. The architecture is what scales, not just this demo.
                     </p>
-                    <p style="font-size: 11px; color: #7F7E7A; margin-top: 8px; font-style: italic; line-height: 1.3;">
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; font-style: italic; line-height: 1.3;">
                         Measured on this hardware, July 2026, using synthetic test topologies mirroring the real network's loop structure — not the live 33-bus feeder, which only has 5 switchable ties.
                     </p>
                 </div>
@@ -1939,20 +1971,20 @@ def render_dashboard():
                         To scale beyond radial feeders to utility-scale meshed microgrids (10,000+ buses), QuantumGrid's architecture incorporates <b>Quantum-Assisted Benders Decomposition</b>:
                     </p>
                     <div style="display: flex; gap: 15px; margin-top: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1; background: rgba(15, 110, 86, 0.08); padding: 12px; border-radius: 6px; border-left: 3px solid #0F6E56;">
-                            <div style="font-weight: 700; color: #0F6E56; font-size: 13px; margin-bottom: 4px;">1. Master Problem (QAOA on Quantum Cloud / Quapp)</div>
-                            <div style="font-size: 12px; color: #2C2C2A; line-height: 1.4;">
+                        <div style="flex: 1; background: rgba(30, 158, 99, 0.08); padding: 12px; border-radius: 6px; border-left: 3px solid var(--green);">
+                            <div style="font-weight: 700; color: var(--green); font-size: 13px; margin-bottom: 4px;">1. Master Problem (QAOA on Quantum Cloud / Quapp)</div>
+                            <div style="font-size: 12px; color: var(--text-primary); line-height: 1.4;">
                                 Formulated as a QUBO matrix. QAOA samples optimal binary tie-switch states (x<sub>ij</sub> ∈ {0, 1}) on quantum hardware.
                             </div>
                         </div>
-                        <div style="flex: 1; background: rgba(27, 42, 74, 0.08); padding: 12px; border-radius: 6px; border-left: 3px solid #1B2A4A;">
-                            <div style="font-weight: 700; color: #1B2A4A; font-size: 13px; margin-bottom: 4px;">2. Subproblem (Classical MILP Power Flow)</div>
-                            <div style="font-size: 12px; color: #2C2C2A; line-height: 1.4;">
+                        <div style="flex: 1; background: rgba(11, 31, 58, 0.08); padding: 12px; border-radius: 6px; border-left: 3px solid var(--navy);">
+                            <div style="font-weight: 700; color: var(--navy); font-size: 13px; margin-bottom: 4px;">2. Subproblem (Classical MILP Power Flow)</div>
+                            <div style="font-size: 12px; color: var(--text-primary); line-height: 1.4;">
                                 Evaluates exact AC/DC power flow, bus voltage bounds (0.95–1.05 p.u.), and thermal line ratings using Mixed-Integer Linear Programming (MILP), returning Benders cuts to refine the QUBO.
                             </div>
                         </div>
                     </div>
-                    <p style="font-size: 11px; color: #7F7E7A; margin-top: 6px; font-style: italic; line-height: 1.3;">
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; font-style: italic; line-height: 1.3;">
                         Combines quantum sampling for discrete binary QUBO optimization with classical Mixed-Integer Linear Programming (MILP) rigor for physical network constraints.
                     </p>
                 </div>
@@ -2035,17 +2067,17 @@ def render_dashboard():
 <span>84%</span>
 </div>
 <div style="text-align: center; margin-top: 12px;">
-<div style="font-size: 16px; font-weight: 600; color: #A32D2D;">OUTAGE</div>
-<div style="font-size: 16px; font-weight: 600; color: #1B2A4A;">QuantumGrid Alert</div>
-<div style="font-size: 11px; color: #5F5E5A; margin-top: 2px;">CRITICAL SYSTEM STATUS</div>
+<div style="font-size: 16px; font-weight: 600; color: var(--red);">OUTAGE</div>
+<div style="font-size: 16px; font-weight: 600; color: var(--navy);">QuantumGrid Alert</div>
+<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">CRITICAL SYSTEM STATUS</div>
 </div>
 <div class="phone-notification">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-<span style="font-size: 11px; font-weight: 600; color: #A32D2D;">ACTIVE OUTAGE</span>
-<span style="font-size: 10px; color: #5F5E5A;">Just Now</span>
+<span style="font-size: 11px; font-weight: 600; color: var(--red);">ACTIVE OUTAGE</span>
+<span style="font-size: 10px; color: var(--text-secondary);">Just Now</span>
 </div>
-<div style="font-size: 14px; font-weight: 600; color: #1B2A4A;">Fault Detected on Line (5, 6)</div>
-<div style="font-size: 12px; color: #2C2C2A; margin-top: 4px; line-height: 1.4;">
+<div style="font-size: 14px; font-weight: 600; color: var(--navy);">Fault Detected on Line (5, 6)</div>
+<div style="font-size: 12px; color: var(--text-primary); margin-top: 4px; line-height: 1.4;">
 Feeder 33-Bus lateral disconnected at 02:14:02.<br/>
 <b>Restoration Recommendation:</b><br/>
 Close Switch (9, 15)
@@ -2055,7 +2087,7 @@ Close Switch (9, 15)
 </div>
 </div>
 <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px; text-align: center;">
-<div style="font-size: 11px; color: #5F5E5A; margin-bottom: 12px;">TOUCH AN ACTION BELOW TO PROCEED</div>
+<div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">TOUCH AN ACTION BELOW TO PROCEED</div>
 </div>
 <div class="phone-footer">
 Recommendation only — your team switches manually
