@@ -1267,7 +1267,9 @@ def render_dashboard():
             f"set of fault scenarios (currently: **{_qaoa_edges_str}**) so judges can see genuine "
             f"quantum results without live-demo network risk. Other fault lines use classical "
             f"simulated annealing and brute-force verification live, with QAOA shown as 'Not Available' "
-            f"rather than substituted or faked."
+            f"rather than substituted or faked. For our Final Presentation, we've built end-to-end integration "
+            f"with our secondary quantum cloud provider (authentication, submission, and network access all verified) "
+            f"to enable live QAOA submission — currently pending a backend fix from the provider's support team."
         )
 
         # Layout selector
@@ -1938,7 +1940,7 @@ def render_dashboard():
                     </p>
                     <div style="display: flex; gap: 15px; margin-top: 10px; margin-bottom: 10px;">
                         <div style="flex: 1; background: rgba(15, 110, 86, 0.08); padding: 12px; border-radius: 6px; border-left: 3px solid #0F6E56;">
-                            <div style="font-weight: 700; color: #0F6E56; font-size: 13px; margin-bottom: 4px;">1. Master Problem (QAOA on qBraid / Quapp)</div>
+                            <div style="font-weight: 700; color: #0F6E56; font-size: 13px; margin-bottom: 4px;">1. Master Problem (QAOA on Quantum Cloud / Quapp)</div>
                             <div style="font-size: 12px; color: #2C2C2A; line-height: 1.4;">
                                 Formulated as a QUBO matrix. QAOA samples optimal binary tie-switch states (x<sub>ij</sub> ∈ {0, 1}) on quantum hardware.
                             </div>
